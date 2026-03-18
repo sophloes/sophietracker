@@ -56,7 +56,41 @@ body::before{content:'';position:fixed;inset:0;background:var(--mesh);pointer-ev
 .sb-div{height:1px;background:rgba(255,255,255,.055);margin:8px 4px}
 
 /* Main */
-.main{margin-left:220px;flex:1;padding:2rem 2.5rem 3rem;max-width:1000px}
+.main{margin-left:220px;flex:1;padding:2rem 2.5rem 3rem;width:100%;min-width:0}
+
+/* Mobile top bar */
+.mobile-topbar{display:none;position:fixed;top:0;left:0;right:0;height:56px;background:rgba(18,12,8,.92);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-bottom:1px solid rgba(255,255,255,.08);z-index:30;align-items:center;padding:0 16px;gap:12px}
+.mobile-topbar h1{font-family:'Indie Flower',cursive;font-size:20px;font-weight:400;color:rgba(255,255,255,.92);flex:1}
+.hamburger{width:36px;height:36px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;flex-shrink:0}
+.hamburger span{width:16px;height:1.5px;background:rgba(255,255,255,.75);border-radius:2px;transition:all .2s}
+
+/* Overlay for mobile nav */
+.sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:25;backdrop-filter:blur(4px)}
+.sb-overlay.open{display:block}
+
+/* Sidebar slide-in on mobile */
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1)}
+  .sidebar.open{transform:translateX(0)}
+  .mobile-topbar{display:flex}
+  .main{margin-left:0;padding:1.25rem 1rem 5rem;padding-top:72px}
+  .stats-bar{grid-template-columns:repeat(2,1fr)}
+  .tc{grid-template-columns:1fr}
+  .fin-goals-grid{grid-template-columns:repeat(2,1fr)}
+  .ph{flex-direction:column;align-items:flex-start;gap:10px}
+  .pgrid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+  .modal{padding:1.5rem}
+  .yr{flex-wrap:wrap}
+  .yd{min-width:0;flex:1}
+}
+
+/* Bottom nav on mobile */
+.mobile-bottomnav{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(18,12,8,.94);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-top:1px solid rgba(255,255,255,.08);z-index:30;padding:8px 0 max(8px,env(safe-area-inset-bottom));justify-content:space-around}
+.mb-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 12px;font-size:10px;color:var(--t3);cursor:pointer;border:none;background:none;font-family:inherit;transition:color .15s;min-width:52px}
+.mb-item.active{color:var(--ac2)}
+.mb-icon{width:22px;height:22px;opacity:.6}
+.mb-item.active .mb-icon{opacity:1}
+@media(max-width:768px){.mobile-bottomnav{display:flex}}
 
 /* Page header */
 .ph{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:1.75rem}
@@ -68,7 +102,7 @@ body::before{content:'';position:fixed;inset:0;background:var(--mesh);pointer-ev
 .gc:hover{border-color:rgba(255,255,255,.12)}
 
 /* Stats */
-.stats-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:1.75rem}
+.stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:11px;margin-bottom:1.75rem}
 .sc{background:rgba(255,255,255,.035);backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);border:1px solid rgba(255,255,255,.07);border-radius:var(--r-lg);padding:14px 16px;transition:all .2s}
 .sc:hover{background:rgba(255,255,255,.06)}
 .sl{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
@@ -177,7 +211,7 @@ label{font-size:12px;font-weight:500;color:var(--t2);display:block;margin-bottom
 .fin-legend{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:1rem}
 .fin-leg-item{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--t2)}
 .fin-leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.fin-goals-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:1.5rem}
+.fin-goals-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:11px;margin-bottom:1.5rem}
 .fin-goal-card{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:var(--r-lg);padding:14px 16px}
 .fin-goal-name{font-size:12px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
 .fin-goal-val{font-size:22px;font-weight:600;letter-spacing:-.5px;line-height:1}
@@ -200,7 +234,7 @@ label{font-size:12px;font-weight:500;color:var(--t2);display:block;margin-bottom
 .page.active{display:block}
 @keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 
-.tc{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.tc{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1.25rem}
 .sl2{font-size:10.5px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:11px}
 hr{border:none;border-top:1px solid rgba(255,255,255,.052);margin:.75rem 0}
 .empty{text-align:center;padding:2.5rem 1rem;color:var(--t3)}
@@ -217,8 +251,18 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 <body>
 <div class="app">
 
+<!-- MOBILE TOP BAR -->
+<div class="mobile-topbar">
+  <div class="hamburger" onclick="toggleMobileNav()" id="hamburger">
+    <span></span><span></span><span></span>
+  </div>
+  <h1>Sophie's Tracker</h1>
+  <div id="sync-status-mobile" style="font-size:11px;color:var(--t2);transition:opacity 1s;opacity:0"></div>
+</div>
+<div class="sb-overlay" id="sb-overlay" onclick="closeMobileNav()"></div>
+
 <!-- SIDEBAR -->
-<nav class="sidebar">
+<nav class="sidebar" id="sidebar">
   <div class="sb-brand">
     <h1>Sophie's Tracker</h1>
     <div id="sync-status" style="font-size:11px;color:var(--t2);margin-top:4px;transition:opacity 1s;opacity:0;letter-spacing:.01em"></div>
@@ -233,7 +277,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     <div class="sb-group">Travel</div>
     <button class="nav-item" onclick="goto('states')">US States<span class="nbadge" id="nb-states">0</span></button>
     <button class="nav-item" onclick="goto('countries')">Countries<span class="nbadge" id="nb-countries">0</span></button>
-    <button class="nav-item" onclick="goto('parks')">Nat'l Parks<span class="nbadge" id="nb-parks">0</span></button>
+    <button class="nav-item" onclick="goto('parks')">National Parks<span class="nbadge" id="nb-parks">0</span></button>
     <button class="nav-item" onclick="goto('bucket')">Bucket List<span class="nbadge" id="nb-bucket">0</span></button>
 
     <div class="sb-div"></div>
@@ -247,6 +291,30 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   </div>
 </nav>
 
+<!-- MOBILE BOTTOM NAV -->
+<div class="mobile-bottomnav">
+  <button class="mb-item active" id="mb-dashboard" onclick="goto('dashboard')">
+    <svg class="mb-icon" viewBox="0 0 20 20" fill="currentColor"><rect x="1" y="1" width="7" height="7" rx="2" opacity=".7"/><rect x="11" y="1" width="8" height="7" rx="2"/><rect x="1" y="11" width="7" height="8" rx="2"/><rect x="11" y="11" width="8" height="8" rx="2" opacity=".7"/></svg>
+    Overview
+  </button>
+  <button class="mb-item" id="mb-travel" onclick="goto('states')">
+    <svg class="mb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="8"/><path d="M2 10h16M10 2a13 13 0 010 16"/></svg>
+    Travel
+  </button>
+  <button class="mb-item" id="mb-finance" onclick="goto('finance')">
+    <svg class="mb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2,15 7,8 11,12 17,4"/></svg>
+    Finance
+  </button>
+  <button class="mb-item" id="mb-books" onclick="goto('books')">
+    <svg class="mb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 3h10a1 1 0 011 1v13H5a1 1 0 01-1-1V3z"/><path d="M4 16a1 1 0 001 1h10"/><path d="M8 7h6M8 10h4"/></svg>
+    Other
+  </button>
+  <button class="mb-item" id="mb-menu" onclick="toggleMobileNav()">
+    <svg class="mb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="6" x2="17" y2="6"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="14" x2="17" y2="14"/></svg>
+    Menu
+  </button>
+</div>
+
 <!-- MAIN -->
 <main class="main">
 
@@ -259,6 +327,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     <div class="sc"><div class="sl">US States</div><div class="sv" id="ds-states">0</div><div class="ss" id="ds-spct">0% visited</div></div>
     <div class="sc"><div class="sl">Parks</div><div class="sv" id="ds-parks">0</div><div class="ss" id="ds-ppct">0% visited</div></div>
     <div class="sc"><div class="sl">Net Worth</div><div class="sv" id="ds-nw" style="font-size:16px;letter-spacing:-.3px">—</div><div class="ss" id="ds-nwsub">latest</div></div>
+    <div class="sc"><div class="sl">Total Investments</div><div class="sv" id="ds-inv" style="font-size:16px;letter-spacing:-.3px">—</div><div class="ss" id="ds-invsub">latest</div></div>
   </div>
   <div class="tc">
     <div class="gc"><div class="sl2">Recent reading</div><div id="dash-books"></div><button class="btn btn-sm btn-ghost" style="margin-top:10px" onclick="goto('books')">View all →</button></div>
@@ -395,12 +464,14 @@ let D=JSON.parse(JSON.stringify(DEF));
 let saveTimeout=null;
 
 function showSyncStatus(msg,color){
-  let el=document.getElementById('sync-status');
-  if(!el)return;
-  el.textContent=msg;
-  el.style.color=color||'var(--t2)';
-  el.style.opacity='1';
-  if(msg!=='Saving...')setTimeout(()=>{el.style.opacity='0';},2500);
+  ['sync-status','sync-status-mobile'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    el.textContent=msg;
+    el.style.color=color||'var(--t2)';
+    el.style.opacity='1';
+    if(msg!=='Saving...')setTimeout(()=>{el.style.opacity='0';},2500);
+  });
 }
 
 async function loadFromSupabase(){
@@ -484,10 +555,35 @@ initData();
 // ─── Nav ──────────────────────────────────────────────────────────────────
 let cur='dashboard';
 const PAGES=['dashboard','states','countries','parks','bucket','finance','books','shopping'];
+
+function toggleMobileNav(){
+  const sidebar=document.getElementById('sidebar');
+  const overlay=document.getElementById('sb-overlay');
+  const isOpen=sidebar.classList.contains('open');
+  sidebar.classList.toggle('open',!isOpen);
+  overlay.classList.toggle('open',!isOpen);
+  document.body.style.overflow=isOpen?'':'hidden';
+}
+function closeMobileNav(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sb-overlay').classList.remove('open');
+  document.body.style.overflow='';
+}
+
 function goto(page){
   cur=page;
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+page));
   document.querySelectorAll('.nav-item').forEach((n,i)=>n.classList.toggle('active',PAGES[i]===page));
+  // bottom nav active state
+  const travelPages=['states','countries','parks','bucket'];
+  const finPages=['finance'];
+  const otherPages=['books','shopping'];
+  document.querySelectorAll('.mb-item').forEach(b=>b.classList.remove('active'));
+  if(page==='dashboard')document.getElementById('mb-dashboard')?.classList.add('active');
+  else if(travelPages.includes(page))document.getElementById('mb-travel')?.classList.add('active');
+  else if(finPages.includes(page))document.getElementById('mb-finance')?.classList.add('active');
+  else if(otherPages.includes(page))document.getElementById('mb-books')?.classList.add('active');
+  closeMobileNav();
   if(page==='states')setTimeout(renderStatesMap,50);
   if(page==='countries')setTimeout(renderWorldMap,50);
   if(page==='parks')setTimeout(renderParks,50);
@@ -499,6 +595,7 @@ function goto(page){
 
 // ─── Formatters ───────────────────────────────────────────────────────────
 function fmt$(n){if(n==null||isNaN(n))return'—';const a=Math.abs(n),s=n<0?'-':'';if(a>=1e6)return s+'$'+(Math.round(a/1e4)/100).toFixed(2).replace(/\.?0+$/,'')+'M';if(a>=1e3)return s+'$'+(Math.round(a/100)/10).toFixed(1).replace(/\.0$/,'')+'K';return s+'$'+Math.round(a).toLocaleString();}
+function fmtFull$(n){if(n==null||isNaN(n))return'—';const a=Math.abs(n),s=n<0?'-':'';return s+'$'+Math.round(a).toLocaleString();}
 function pct(a,b){return b?Math.round(a/b*100):0;}
 
 // ─── Refresh ──────────────────────────────────────────────────────────────
@@ -531,6 +628,8 @@ function updateBadges(){
   document.getElementById('bucket-sub').textContent=D.bucket.filter(i=>i.done).length+' of '+D.bucket.length+' completed';
   const nwY=Object.keys(D.finance.networth).sort();
   if(nwY.length){const lat=D.finance.networth[nwY[nwY.length-1]];document.getElementById('ds-nw').textContent=fmt$(lat);if(nwY.length>1){const diff=lat-D.finance.networth[nwY[nwY.length-2]];const el=document.getElementById('ds-nwsub');el.textContent=(diff>=0?'+':'')+fmt$(diff)+' yr';el.style.color=diff>=0?'var(--green)':'var(--red)';}}else document.getElementById('ds-nw').textContent='—';
+  const invY2=Object.keys(D.finance.investments).sort();
+  if(invY2.length){const lat=D.finance.investments[invY2[invY2.length-1]].total;document.getElementById('ds-inv').textContent=fmt$(lat);if(invY2.length>1){const diff=lat-D.finance.investments[invY2[invY2.length-2]].total;const el=document.getElementById('ds-invsub');el.textContent=(diff>=0?'+':'')+fmt$(diff)+' yr';el.style.color=diff>=0?'var(--green)':'var(--red)';}else document.getElementById('ds-invsub').textContent='latest';}else{document.getElementById('ds-inv').textContent='—';document.getElementById('ds-invsub').textContent='latest';}
 }
 
 // ─── BOOKS ────────────────────────────────────────────────────────────────
@@ -604,18 +703,38 @@ function renderCountriesTags(){document.getElementById('countries-tags').innerHT
 function removeCountry(c){const i=D.countries.findIndex(x=>x.toLowerCase()===c.toLowerCase());if(i>=0){D.countries.splice(i,1);save();renderWorldMap();}}
 function renderWorldMap(){
   const wrap=document.getElementById('world-map');wrap.innerHTML='';
+  let tip=document.getElementById('world-tip');
+  if(!tip){tip=document.createElement('div');tip.id='world-tip';tip.style.cssText='position:fixed;pointer-events:none;display:none;background:rgba(22,16,9,.95);color:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:6px 13px;font-size:13px;font-weight:500;font-family:-apple-system,sans-serif;z-index:9999;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.4)';document.body.appendChild(tip);}
   const vis=new Set(D.countries.map(c=>c.toLowerCase()));
-  const svg=d3.select(wrap).append('svg').attr('viewBox','0 0 960 500').attr('width','100%');
-  const proj=d3.geoNaturalEarth1().scale(153).translate([480,250]);
+  const W=960,H=500;
+  const svg=d3.select(wrap).append('svg').attr('viewBox',`0 0 ${W} ${H}`).attr('width','100%').style('cursor','grab');
+  const proj=d3.geoNaturalEarth1().scale(153).translate([W/2,H/2]);
   const path=d3.geoPath(proj);
+  const g=svg.append('g');
+  // zoom behaviour
+  const zoom=d3.zoom().scaleExtent([1,8]).on('zoom',e=>{
+    g.attr('transform',e.transform);
+    svg.style('cursor',e.transform.k>1?'move':'grab');
+  });
+  svg.call(zoom);
+  // reset button double-click
+  svg.on('dblclick.zoom',()=>svg.transition().duration(500).call(zoom.transform,d3.zoomIdentity));
   d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(world=>{
-    svg.selectAll('path').data(topojson.feature(world,world.objects.countries).features).join('path')
+    g.selectAll('path').data(topojson.feature(world,world.objects.countries).features).join('path')
       .attr('d',path).attr('fill',d=>vis.has((CN[+d.id]||'').toLowerCase())?'rgba(249,115,22,.70)':'rgba(255,255,255,.052)')
       .attr('stroke','rgba(255,255,255,.08)').attr('stroke-width',.4).style('cursor','pointer')
-      .on('mouseover',function(e,d){d3.select(this).attr('fill',vis.has((CN[+d.id]||'').toLowerCase())?'rgba(249,115,22,.9)':'rgba(255,255,255,.10)');})
-      .on('mouseout',function(e,d){d3.select(this).attr('fill',vis.has((CN[+d.id]||'').toLowerCase())?'rgba(249,115,22,.70)':'rgba(255,255,255,.052)');})
-      .on('click',function(e,d){const name=CN[+d.id];if(name)toggleCountry(name);})
-      .append('title').text(d=>(CN[+d.id]||'')+(vis.has((CN[+d.id]||'').toLowerCase())?' ✓':''));
+      .on('mouseover',function(e,d){
+        const name=CN[+d.id]||'';
+        const v=vis.has(name.toLowerCase());
+        d3.select(this).attr('fill',v?'rgba(249,115,22,.9)':'rgba(255,255,255,.10)');
+        if(name){tip.innerHTML=name+(v?' <span style="color:#34d399">✓</span>':'');tip.style.display='block';}
+      })
+      .on('mousemove',function(e){tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-10)+'px';})
+      .on('mouseout',function(e,d){
+        d3.select(this).attr('fill',vis.has((CN[+d.id]||'').toLowerCase())?'rgba(249,115,22,.70)':'rgba(255,255,255,.052)');
+        tip.style.display='none';
+      })
+      .on('click',function(e,d){const name=CN[+d.id];if(name)toggleCountry(name);});
   });
 }
 function toggleCountry(name){const i=D.countries.findIndex(c=>c.toLowerCase()===name.toLowerCase());if(i>=0)D.countries.splice(i,1);else D.countries.push(name);save();renderWorldMap();}
@@ -803,8 +922,13 @@ function renderFinChart(){
     label:FIN_LABELS[s],
     data:years.map(y=>getFinVal(s,y)),
     borderColor:FIN_COLORS[s],
-    backgroundColor:FIN_COLORS[s].replace('.85',',.10)').replace('rgba(','rgba('),
-    fill:false,tension:.35,pointRadius:4,pointHoverRadius:6,borderWidth:2,
+    backgroundColor:FIN_COLORS[s],
+    pointBackgroundColor:FIN_COLORS[s],
+    pointBorderColor:FIN_COLORS[s],
+    pointHoverBackgroundColor:FIN_COLORS[s].replace('.85)','1)'),
+    pointHoverBorderColor:FIN_COLORS[s].replace('.85)','1)'),
+    pointHoverBorderWidth:0,
+    fill:false,tension:.35,pointRadius:4,pointHoverRadius:7,borderWidth:2,
     spanGaps:true
   }));
   finCI=new Chart(document.getElementById('finChart'),{
@@ -842,7 +966,7 @@ function renderFinGoals(){
   const goals=D.finance.otherGoals||[];
   if(!goals.length){el.innerHTML='<p style="font-size:13px;color:var(--t3)">No goals yet. Add goals like "Emergency Fund", "House Down Payment", etc.</p>';return;}
   el.innerHTML=goals.map((g,i)=>{const p=g.target?Math.min(100,Math.round((g.current||0)/g.target*100)):0;
-    return`<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.045)"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:13.5px">${g.name}</span><div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;font-weight:600">${fmt$(g.current||0)}${g.target?' / '+fmt$(g.target):''}</span><button class="btn btn-sm btn-ghost" onclick="openEditFinGoal(${i})">Edit</button><button class="btn btn-sm btn-danger" onclick="delFinGoal(${i})">×</button></div></div>${g.target?`<div class="ptrack"><div class="pbar${p>=100?' full':''}" style="width:${p}%"></div></div><div style="font-size:11px;color:var(--t3);margin-top:3px">${p}%${p>=100?' — reached!':''}</div>`:''}</div>`;
+    return`<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.045)"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:13.5px">${g.name}</span><div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;font-weight:600">${fmtFull$(g.current||0)}${g.target?' / '+fmtFull$(g.target):''}</span><button class="btn btn-sm btn-ghost" onclick="openEditFinGoal(${i})">Edit</button><button class="btn btn-sm btn-danger" onclick="delFinGoal(${i})">×</button></div></div>${g.target?`<div class="ptrack"><div class="pbar${p>=100?' full':''}" style="width:${p}%"></div></div><div style="font-size:11px;color:var(--t3);margin-top:3px">${p}%${p>=100?' — reached!':''}</div>`:''}</div>`;
   }).join('');
 }
 
@@ -853,7 +977,7 @@ function renderFinEntries(){
   if(!years.length){el.innerHTML='<p style="font-size:13px;color:var(--t3)">No entries yet. Use "+ Add entry" to get started.</p>';return;}
   el.innerHTML=`<div style="display:grid;grid-template-columns:60px 1fr 1fr 1fr auto;gap:10px;padding:0 0 8px;border-bottom:1px solid rgba(255,255,255,.07);font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.07em"><span>Year</span><span>Net Worth</span><span>Investments</span><span>Retirement</span><span></span></div>`+
   years.map(y=>{const nw=D.finance.networth[y],inv=D.finance.investments[y]?.total,ret=D.finance.retirement.entries?.[y];
-    return`<div style="display:grid;grid-template-columns:60px 1fr 1fr 1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="font-size:13px;font-weight:600;color:var(--t2)">${y}</span><span style="font-size:13.5px">${nw!=null?fmt$(nw):'—'}</span><span style="font-size:13.5px">${inv!=null?fmt$(inv):'—'}</span><span style="font-size:13.5px">${ret!=null?fmt$(ret):'—'}</span><button class="btn btn-sm btn-ghost" onclick="openEditFinEntry('${y}')">Edit</button></div>`;
+    return`<div style="display:grid;grid-template-columns:60px 1fr 1fr 1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="font-size:13px;font-weight:600;color:var(--t2)">${y}</span><span style="font-size:13.5px">${nw!=null?fmtFull$(nw):'—'}</span><span style="font-size:13.5px">${inv!=null?fmtFull$(inv):'—'}</span><span style="font-size:13.5px">${ret!=null?fmtFull$(ret):'—'}</span><button class="btn btn-sm btn-ghost" onclick="openEditFinEntry('${y}')">Edit</button></div>`;
   }).join('');
 }
 

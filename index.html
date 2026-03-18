@@ -34,10 +34,10 @@
   --blur:blur(24px) saturate(180%);
   --blur-sm:blur(14px) saturate(160%);
 }
-html{height:100%}
+html{height:100%;width:100%}
 body{font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 body::before{content:'';position:fixed;inset:0;background:var(--mesh);pointer-events:none;z-index:0}
-.app{display:flex;min-height:100vh;position:relative;z-index:1}
+.app{display:flex;min-height:100vh;width:100%;position:relative;z-index:1}
 
 /* Sidebar */
 .sidebar{width:220px;flex-shrink:0;position:fixed;height:100vh;display:flex;flex-direction:column;background:rgba(255,255,255,.026);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-right:1px solid var(--gb);z-index:20;padding:0 10px}
@@ -56,7 +56,7 @@ body::before{content:'';position:fixed;inset:0;background:var(--mesh);pointer-ev
 .sb-div{height:1px;background:rgba(255,255,255,.055);margin:8px 4px}
 
 /* Main */
-.main{margin-left:220px;flex:1;padding:2rem 2.5rem 3rem;width:100%;min-width:0}
+.main{margin-left:220px;flex:1;padding:2rem 2.5rem 3rem;min-width:0;overflow-x:hidden}
 
 /* Mobile top bar */
 .mobile-topbar{display:none;position:fixed;top:0;left:0;right:0;height:56px;background:rgba(18,12,8,.92);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-bottom:1px solid rgba(255,255,255,.08);z-index:30;align-items:center;padding:0 16px;gap:12px}
@@ -73,7 +73,7 @@ body::before{content:'';position:fixed;inset:0;background:var(--mesh);pointer-ev
   .sidebar{transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1)}
   .sidebar.open{transform:translateX(0)}
   .mobile-topbar{display:flex}
-  .main{margin-left:0;padding:1.25rem 1rem 5rem;padding-top:72px}
+  .main{margin-left:0!important;padding:1.25rem 1rem 5rem;padding-top:72px}
   .stats-bar{grid-template-columns:repeat(2,1fr)}
   .tc{grid-template-columns:1fr}
   .fin-goals-grid{grid-template-columns:repeat(2,1fr)}
@@ -98,12 +98,12 @@ body::before{content:'';position:fixed;inset:0;background:var(--mesh);pointer-ev
 .ps{font-size:13px;color:var(--t2);margin-top:2px;font-family:-apple-system,'Helvetica Neue',sans-serif}
 
 /* Glass card */
-.gc{background:rgba(255,255,255,.044);backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);border:1px solid rgba(255,255,255,.08);border-radius:var(--r-xl);padding:1.25rem 1.5rem;transition:border-color .2s}
+.gc{background:rgba(255,255,255,.044);backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);border:1px solid rgba(255,255,255,.08);border-radius:var(--r-xl);padding:1.25rem 1.5rem;transition:border-color .2s;width:100%;box-sizing:border-box}
 .gc:hover{border-color:rgba(255,255,255,.12)}
 
 /* Stats */
 .stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:11px;margin-bottom:1.75rem}
-.sc{background:rgba(255,255,255,.035);backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);border:1px solid rgba(255,255,255,.07);border-radius:var(--r-lg);padding:14px 16px;transition:all .2s}
+.sc{background:rgba(255,255,255,.035);backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);border:1px solid rgba(255,255,255,.07);border-radius:var(--r-lg);padding:14px 16px;transition:all .2s;width:100%;box-sizing:border-box}
 .sc:hover{background:rgba(255,255,255,.06)}
 .sl{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
 .sv{font-size:21px;font-weight:600;letter-spacing:-.5px;line-height:1}
@@ -399,12 +399,12 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   <div class="fin-goals-grid" id="fin-cards"></div>
 
   <!-- Combined chart -->
-  <div class="gc" style="margin-bottom:1.5rem">
+  <div class="gc" style="margin-bottom:1.5rem;width:100%">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
       <div class="sl2" style="margin:0">Year-over-year comparison</div>
       <div class="fin-legend" id="fin-legend" style="margin:0"></div>
     </div>
-    <div style="position:relative;height:280px"><canvas id="finChart"></canvas></div>
+    <div style="position:relative;height:280px;width:100%"><canvas id="finChart"></canvas></div>
   </div>
 
   <!-- Retirement progress + goals list -->
@@ -433,7 +433,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 <!-- BOOKS -->
 <div class="page" id="page-books">
   <div class="ph"><div><div class="pt">Books</div><div class="ps">Track what you read each year</div></div><button class="btn btn-primary" onclick="openAddYear()">+ Add year</button></div>
-  <div style="position:relative;height:250px;margin-bottom:1.5rem"><canvas id="booksChart"></canvas></div>
+  <div style="position:relative;height:250px;margin-bottom:1.5rem;width:100%"><canvas id="booksChart"></canvas></div>
   <div class="gc" id="books-list"></div>
 </div>
 

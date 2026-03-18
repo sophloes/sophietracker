@@ -59,9 +59,9 @@ body::before{content:'';position:fixed;inset:0;background:var(--mesh);pointer-ev
 .main{margin-left:220px;flex:1;padding:2rem 2.5rem 3rem;min-width:0;overflow-x:hidden}
 
 /* Mobile top bar */
-.mobile-topbar{display:none;position:fixed;top:0;left:0;right:0;height:56px;background:rgba(18,12,8,.92);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-bottom:1px solid rgba(255,255,255,.08);z-index:30;align-items:center;padding:0 16px;gap:12px}
+.mobile-topbar{display:none;position:fixed;top:0;left:0;right:0;height:56px;background:rgba(18,12,8,.96);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-bottom:1px solid rgba(255,255,255,.08);z-index:35;align-items:center;padding:0 16px;gap:12px;-webkit-tap-highlight-color:transparent}
 .mobile-topbar h1{font-family:'Inter',-apple-system,'Helvetica Neue',sans-serif;font-size:16px;font-weight:600;letter-spacing:-.4px;color:rgba(255,255,255,.95);flex:1}
-.hamburger{width:36px;height:36px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;flex-shrink:0}
+.hamburger{width:44px;height:44px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation;padding:0;font-family:inherit}
 .hamburger span{width:16px;height:1.5px;background:rgba(255,255,255,.75);border-radius:2px;transition:all .2s}
 
 /* Overlay for mobile nav */
@@ -249,9 +249,9 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 
 <!-- MOBILE TOP BAR -->
 <div class="mobile-topbar">
-  <div class="hamburger" onclick="toggleMobileNav()" id="hamburger">
+  <button class="hamburger" onclick="toggleMobileNav()" id="hamburger" aria-label="Menu">
     <span></span><span></span><span></span>
-  </div>
+  </button>
   <h1>Sophie's Tracker</h1>
   <div id="sync-status-mobile" style="font-size:11px;color:var(--t2);transition:opacity 1s;opacity:0"></div>
 </div>
@@ -563,12 +563,10 @@ function toggleMobileNav(){
   const isOpen=sidebar.classList.contains('open');
   sidebar.classList.toggle('open',!isOpen);
   overlay.classList.toggle('open',!isOpen);
-  document.body.style.overflow=isOpen?'':'hidden';
 }
 function closeMobileNav(){
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sb-overlay').classList.remove('open');
-  document.body.style.overflow='';
 }
 
 function goto(page){

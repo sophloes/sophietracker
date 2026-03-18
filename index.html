@@ -40,13 +40,13 @@ body::before{content:'';position:fixed;inset:0;background:var(--mesh);pointer-ev
 .app{display:flex;min-height:100vh;width:100%;position:relative;z-index:1}
 
 /* Sidebar */
-.sidebar{width:220px;flex-shrink:0;position:fixed;height:100vh;display:flex;flex-direction:column;background:rgba(255,255,255,.026);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-right:1px solid var(--gb);z-index:20;padding:0 10px}
+.sidebar{width:220px;flex-shrink:0;position:fixed;height:100vh;display:flex;flex-direction:column;background:rgba(255,255,255,.026);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-right:1px solid var(--gb);z-index:30;padding:0 10px}
 .sb-brand{padding:24px 10px 16px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:8px}
 .sb-brand h1{font-family:'Inter',-apple-system,'Helvetica Neue',sans-serif;font-size:16px;font-weight:600;letter-spacing:-.4px;color:rgba(255,255,255,.95);background:none;-webkit-text-fill-color:unset}
 .sb-scroll{flex:1;overflow-y:auto;padding-bottom:20px}
 .sb-scroll::-webkit-scrollbar{display:none}
 .sb-group{font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.09em;text-transform:uppercase;padding:14px 10px 5px}
-.nav-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r-md);cursor:pointer;font-size:13px;font-weight:400;color:var(--t2);border:1px solid transparent;background:transparent;width:100%;text-align:left;font-family:inherit;transition:all .15s cubic-bezier(.4,0,.2,1);margin-bottom:2px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:10px 10px;border-radius:var(--r-md);cursor:pointer;font-size:13px;font-weight:400;color:var(--t2);border:1px solid transparent;background:transparent;width:100%;text-align:left;font-family:inherit;transition:all .15s cubic-bezier(.4,0,.2,1);margin-bottom:2px;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .nav-item:hover{background:var(--gh);color:var(--t1)}
 .nav-item.active{background:var(--ga);border-color:var(--gab);color:var(--ac2);font-weight:500}
 .ni{width:15px;height:15px;flex-shrink:0;opacity:.65}
@@ -378,10 +378,13 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 <!-- BUCKET LIST -->
 <div class="page" id="page-bucket">
   <div class="ph"><div><div class="pt">Bucket List</div><div class="ps" id="bucket-sub">0 completed</div></div><button class="btn btn-primary" onclick="openAddBucket()">+ Add item</button></div>
-  <div class="ftabs">
-    <button class="ft active" onclick="setBF('all',this)">All</button>
-    <button class="ft" onclick="setBF('todo',this)">To do</button>
-    <button class="ft" onclick="setBF('done',this)">Done</button>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap">
+    <div class="ftabs" style="margin-bottom:0">
+      <button class="ft active" onclick="setBF('all',this)">All</button>
+      <button class="ft" onclick="setBF('todo',this)">To do</button>
+      <button class="ft" onclick="setBF('done',this)">Done</button>
+    </div>
+    <input id="bucket-search" placeholder="Search items..." oninput="renderBucketList()" style="flex:1;min-width:160px;max-width:280px;padding:7px 12px;font-size:13px">
   </div>
   <div class="gc" id="bucket-list"></div>
 </div>
@@ -440,9 +443,14 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 
 <!-- SHOPPING -->
 <div class="page" id="page-shopping">
-  <div class="ph"><div><div class="pt">Shopping List</div><div class="ps" id="shop-sub">0 items</div></div><button class="btn btn-primary" onclick="openAddShop()">+ Add item</button></div>
-  <div class="ftabs"><button class="ft active" onclick="setSF('all',this)">All</button><button class="ft" onclick="setSF('want',this)">Want</button><button class="ft" onclick="setSF('bought',this)">Bought</button></div>
-  <div class="ftabs" id="shop-cat-tabs" style="margin-top:-6px"></div>
+  <div class="ph"><div><div class="pt">Shopping List</div><div class="ps" id="shop-sub">0 items</div></div><button class="btn btn-primary" id="shop-add-btn" onclick="openAddShop()">+ Add item</button></div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap">
+    <div class="ftabs" style="margin-bottom:0">
+      <button class="ft active" id="shop-tab-planned" onclick="setShopTab('planned',this)">Planned</button>
+      <button class="ft" id="shop-tab-wishlist" onclick="setShopTab('wishlist',this)">Bucket List</button>
+    </div>
+    <input id="shop-search" placeholder="Search items..." oninput="renderShopList()" style="flex:1;min-width:160px;max-width:280px;padding:7px 12px;font-size:13px">
+  </div>
   <div class="gc" id="shop-list"></div>
 </div>
 
@@ -1143,7 +1151,9 @@ function delFinGoal(i){D.finance.otherGoals.splice(i,1);save();}
 let bf='all';
 function setBF(f,btn){bf=f;document.querySelectorAll('#page-bucket .ft').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderBucketList();}
 function renderBucketList(){
-  const items=D.bucket.filter(it=>bf==='all'?true:bf==='done'?it.done:!it.done);
+  const q=(document.getElementById('bucket-search')?.value||'').toLowerCase().trim();
+  let items=D.bucket.filter(it=>bf==='all'?true:bf==='done'?it.done:!it.done);
+  if(q)items=items.filter(it=>it.text.toLowerCase().includes(q)||(it.cat||'').toLowerCase().includes(q));
   const el=document.getElementById('bucket-list');
   if(!items.length){el.innerHTML='<div class="empty"><p>'+(D.bucket.length?'Nothing here.':'Start dreaming big.')+'</p><button class="btn btn-primary" onclick="openAddBucket()">+ Add item</button></div>';return;}
   el.innerHTML=items.map(it=>{const idx=D.bucket.indexOf(it);return`<div class="li"><div class="cc${it.done?' done':''}" onclick="toggleBucket(${idx})"><svg class="ci" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ib"><div class="in${it.done?' x':''}">${it.text}</div>${it.cat?`<div class="im"><span class="pill po">${it.cat}</span></div>`:''}</div><div class="ia"><button class="btn btn-sm btn-ghost" onclick="openEditBucket(${idx})">Edit</button><button class="btn btn-sm btn-danger" onclick="delBucket(${idx})">×</button></div></div>`;}).join('');
@@ -1155,28 +1165,100 @@ function toggleBucket(i){D.bucket[i].done=!D.bucket[i].done;save();}
 function delBucket(i){D.bucket.splice(i,1);save();}
 
 // ─── SHOPPING ─────────────────────────────────────────────────────────────
-let sf='all',sc='all';
-const SCATS=['Tech','Home','Clothing','Fitness','Travel','Books','Other'];
-function setSF(f,btn){sf=f;document.querySelectorAll('#page-shopping>.ftabs:first-of-type .ft').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderShopList();}
-function setShopCat(c){sc=c;renderShopList();}
-function renderShopList(){
-  const cats=[...new Set(D.shopping.map(i=>i.cat||'Other'))].sort();
-  const catEl=document.getElementById('shop-cat-tabs');
-  catEl.innerHTML=['<button class="ft'+(sc==='all'?' active':'')+'" onclick="setShopCat(\'all\');this.parentElement.querySelectorAll(\'.ft\').forEach(b=>b.classList.remove(\'active\'));this.classList.add(\'active\')">All</button>',...cats.map(c=>`<button class="ft${sc===c?' active':''}" onclick="setShopCat('${c}');this.parentElement.querySelectorAll('.ft').forEach(b=>b.classList.remove('active'));this.classList.add('active')">${c}</button>`)].join('');
-  let items=D.shopping;
-  if(sf==='bought')items=items.filter(i=>i.bought);
-  else if(sf==='want')items=items.filter(i=>!i.bought);
-  if(sc!=='all')items=items.filter(i=>(i.cat||'Other')===sc);
-  const bought=D.shopping.filter(i=>i.bought).length,total=D.shopping.length;
-  const rem=D.shopping.filter(i=>!i.bought&&i.price).reduce((a,b)=>a+b.price,0);
-  document.getElementById('shop-sub').textContent=bought+' of '+total+' bought'+(rem?' · '+fmt$(rem)+' remaining':'');
-  const el=document.getElementById('shop-list');
-  if(!items.length){el.innerHTML='<div class="empty"><p>'+(D.shopping.length?'Nothing here.':'No items yet.')+'</p><button class="btn btn-primary" onclick="openAddShop()">+ Add item</button></div>';return;}
-  el.innerHTML=items.map(it=>{const idx=D.shopping.indexOf(it);return`<div class="li"><div class="cc${it.bought?' bought':''}" onclick="toggleShop(${idx})"><svg class="ci" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ib"><div class="in${it.bought?' x':''}">${it.name}</div><div class="im">${it.cat?`<span class="pill po">${it.cat}</span>`:''} ${it.notes?`<span style="font-size:12px;color:var(--t3)">${it.notes}</span>`:''}</div></div>${it.price?`<div class="ipr">${fmt$(it.price)}</div>`:''}<div class="ia"><button class="btn btn-sm btn-ghost" onclick="openEditShop(${idx})">Edit</button><button class="btn btn-sm btn-danger" onclick="delShop(${idx})">×</button></div></div>`;}).join('');
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+let shopTab='planned';
+
+function setShopTab(tab,btn){
+  shopTab=tab;
+  document.querySelectorAll('#page-shopping .ft').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderShopList();
 }
-function openAddShop(){const co=SCATS.map(c=>`<option>${c}</option>`).join('');showModal(`<h2>Add item</h2><div class="fg"><label>Item name</label><input id="m-sn" placeholder="iPhone 16 Pro"></div><div class="fr"><div class="fg"><label>Price</label><input id="m-sp" type="number" placeholder="999"></div><div class="fg"><label>Category</label><select id="m-sc"><option value="">Select...</option>${co}</select></div></div><div class="fg"><label>Notes</label><input id="m-sno" placeholder="Wait for sale..."></div><div class="ma"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveShop()">Add</button></div>`);}
-function openEditShop(i){const it=D.shopping[i];const co=SCATS.map(c=>`<option${it.cat===c?' selected':''}>${c}</option>`).join('');showModal(`<h2>Edit item</h2><div class="fg"><label>Item name</label><input id="m-sn" value="${it.name}"></div><div class="fr"><div class="fg"><label>Price</label><input id="m-sp" type="number" value="${it.price||''}"></div><div class="fg"><label>Category</label><select id="m-sc"><option value="">Select...</option>${co}</select></div></div><div class="fg"><label>Notes</label><input id="m-sno" value="${it.notes||''}"></div><input type="hidden" id="m-sidx" value="${i}"><div class="ma"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveShop(true)">Save</button></div>`);}
-function saveShop(edit){const name=document.getElementById('m-sn').value.trim(),price=parseFloat(document.getElementById('m-sp').value)||0,cat=document.getElementById('m-sc').value,notes=document.getElementById('m-sno').value.trim();if(!name)return;if(edit){const i=+document.getElementById('m-sidx').value;Object.assign(D.shopping[i],{name,price,cat,notes});}else D.shopping.push({name,price,cat,notes,bought:false});closeModal();save();}
+
+function linkTag(link){
+  if(!link)return'';
+  try{const host=new URL(link).hostname.replace('www.','');return`<a href="${link}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;font-size:11.5px;color:var(--ac2);text-decoration:none;opacity:.85;margin-top:2px" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.85"><svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 2H2a1 1 0 00-1 1v7a1 1 0 001 1h7a1 1 0 001-1V8"/><path d="M8 1h3v3"/><line x1="11" y1="1" x2="5" y2="7"/></svg>${host}</a>`;}
+  catch(e){return`<a href="${link}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;font-size:11.5px;color:var(--ac2);text-decoration:none;opacity:.85">Link</a>`;}
+}
+
+function renderShopList(){
+  const q=(document.getElementById('shop-search')?.value||'').toLowerCase().trim();
+  const planned=D.shopping.filter(i=>i.shopTab==='planned'||(i.shopTab===undefined&&!i.wishlist));
+  const wishlist=D.shopping.filter(i=>i.shopTab==='wishlist'||i.wishlist);
+  let items=shopTab==='planned'?planned:wishlist;
+  if(q)items=items.filter(i=>i.name.toLowerCase().includes(q)||(i.notes||'').toLowerCase().includes(q)||(i.month||'').toLowerCase().includes(q));
+  const bought=items.filter(i=>i.bought).length;
+  document.getElementById('shop-sub').textContent=items.length+' items · '+bought+' bought';
+  const el=document.getElementById('shop-list');
+  if(!items.length){el.innerHTML=`<div class="empty"><p>${q?'No results for "'+q+'".':(shopTab==='planned'?'No planned purchases yet.':'No bucket list items yet.')}</p><button class="btn btn-primary" onclick="openAddShop()">+ Add item</button></div>`;return;}
+  if(shopTab==='planned'){
+    if(q){
+      el.innerHTML=items.map(it=>{const realIdx=D.shopping.indexOf(it);return plannedRow(it,realIdx);}).join('');
+      return;
+    }
+    const byMonth={};
+    const noMonth=[];
+    items.forEach((it,globalIdx)=>{
+      const realIdx=D.shopping.indexOf(it);
+      if(it.month)byMonth[it.month]=(byMonth[it.month]||[]).concat({it,realIdx});
+      else noMonth.push({it,realIdx});
+    });
+    let html='';
+    MONTHS.forEach(m=>{
+      if(!byMonth[m])return;
+      html+=`<div style="margin-bottom:1rem"><div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.05);margin-bottom:4px">${m}</div>`;
+      html+=byMonth[m].map(({it,realIdx})=>plannedRow(it,realIdx)).join('');
+      html+='</div>';
+    });
+    if(noMonth.length){html+=`<div style="margin-bottom:1rem"><div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.05);margin-bottom:4px">Unscheduled</div>`;html+=noMonth.map(({it,realIdx})=>plannedRow(it,realIdx)).join('');html+='</div>';}
+    el.innerHTML=html||'<div class="empty"><p>No planned purchases yet.</p></div>';
+  } else {
+    el.innerHTML=items.map(it=>{const realIdx=D.shopping.indexOf(it);return wishlistRow(it,realIdx);}).join('');
+  }
+}
+
+function plannedRow(it,idx){
+  return`<div class="li"><div class="cc${it.bought?' bought':''}" onclick="toggleShop(${idx})"><svg class="ci" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ib"><div class="in${it.bought?' x':''}">${it.name}</div><div class="im" style="flex-direction:column;align-items:flex-start;gap:2px">${it.notes?`<span style="font-size:12px;color:var(--t3)">${it.notes}</span>`:''}${linkTag(it.link)}</div></div><div class="ia"><button class="btn btn-sm btn-ghost" onclick="openEditShop(${idx})">Edit</button><button class="btn btn-sm btn-danger" onclick="delShop(${idx})">×</button></div></div>`;
+}
+
+function wishlistRow(it,idx){
+  return`<div class="li"><div class="cc${it.bought?' bought':''}" onclick="toggleShop(${idx})"><svg class="ci" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ib"><div class="in${it.bought?' x':''}">${it.name}</div><div class="im" style="margin-top:3px">${linkTag(it.link)}</div></div><div class="ia"><button class="btn btn-sm btn-ghost" onclick="openEditShop(${idx})">Edit</button><button class="btn btn-sm btn-danger" onclick="delShop(${idx})">×</button></div></div>`;
+}
+
+function openAddShop(){
+  if(shopTab==='wishlist'){
+    showModal(`<h2>Add bucket list item</h2><div class="fg"><label>Item name</label><input id="m-sn" placeholder="Hermès bag, MacBook Pro..."></div><div class="fg"><label>Link (optional)</label><input id="m-sl" placeholder="https://..."></div><div class="ma"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveShop()">Add</button></div>`);
+  } else {
+    const mo=MONTHS.map(m=>`<option>${m}</option>`).join('');
+    showModal(`<h2>Add planned purchase</h2><div class="fg"><label>Item name</label><input id="m-sn" placeholder="AirPods Pro, Couch..."></div><div class="fg"><label>Month (optional)</label><select id="m-month"><option value="">No specific month</option>${mo}</select></div><div class="fg"><label>Link (optional)</label><input id="m-sl" placeholder="https://..."></div><div class="fg"><label>Notes (optional)</label><input id="m-sno" placeholder="Wait for sale..."></div><div class="ma"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveShop()">Add</button></div>`);
+  }
+}
+
+function openEditShop(i){
+  const it=D.shopping[i];
+  const tab=it.shopTab||'planned';
+  if(tab==='wishlist'){
+    showModal(`<h2>Edit item</h2><div class="fg"><label>Item name</label><input id="m-sn" value="${it.name}"></div><div class="fg"><label>Link (optional)</label><input id="m-sl" value="${it.link||''}"></div><input type="hidden" id="m-sidx" value="${i}"><div class="ma"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveShop(true)">Save</button></div>`);
+  } else {
+    const mo=MONTHS.map(m=>`<option${it.month===m?' selected':''}>${m}</option>`).join('');
+    showModal(`<h2>Edit item</h2><div class="fg"><label>Item name</label><input id="m-sn" value="${it.name}"></div><div class="fg"><label>Month</label><select id="m-month"><option value="">No specific month</option>${mo}</select></div><div class="fg"><label>Link (optional)</label><input id="m-sl" value="${it.link||''}"></div><div class="fg"><label>Notes</label><input id="m-sno" value="${it.notes||''}"></div><input type="hidden" id="m-sidx" value="${i}"><div class="ma"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveShop(true)">Save</button></div>`);
+  }
+}
+
+function saveShop(edit){
+  const name=document.getElementById('m-sn')?.value.trim();
+  if(!name)return;
+  const link=document.getElementById('m-sl')?.value.trim()||'';
+  const month=document.getElementById('m-month')?.value||'';
+  const notes=document.getElementById('m-sno')?.value.trim()||'';
+  if(edit){
+    const i=+document.getElementById('m-sidx').value;
+    Object.assign(D.shopping[i],{name,link,month,notes});
+  } else {
+    D.shopping.push({name,link,month,notes,shopTab,bought:false});
+  }
+  closeModal();save();
+}
 function toggleShop(i){D.shopping[i].bought=!D.shopping[i].bought;save();}
 function delShop(i){D.shopping.splice(i,1);save();}
 

@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sophie's Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#18140f;
+  --mesh:radial-gradient(ellipse 80% 60% at 15% 0%,rgba(251,146,60,.11) 0%,transparent 60%),
+         radial-gradient(ellipse 60% 50% at 85% 5%,rgba(245,101,18,.07) 0%,transparent 60%),
+         radial-gradient(ellipse 70% 80% at 50% 100%,rgba(234,88,12,.05) 0%,transparent 60%);
+  --gb:rgba(255,255,255,.085);
+  --gh:rgba(255,255,255,.07);
+  --ga:rgba(251,146,60,.13);
+  --gab:rgba(251,146,60,.35);
+  --t1:rgba(255,255,255,.90);
+  --t2:rgba(255,255,255,.52);
+  --t3:rgba(255,255,255,.30);
+  --ac:#f97316;
+  --ac2:#fb923c;
+  --acg:rgba(249,115,22,.28);
+  --acbg:rgba(249,115,22,.11);
+  --green:#34d399;
+  --red:#f87171;
+  --blue:#60a5fa;
+  --purple:#a78bfa;
+  --r-sm:10px;--r-md:14px;--r-lg:20px;--r-xl:26px;
+  --blur:blur(24px) saturate(180%);
+  --blur-sm:blur(14px) saturate(160%);
+}
+html{height:100%}
+body{font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;background:var(--mesh);pointer-events:none;z-index:0}
+.app{display:flex;min-height:100vh;position:relative;z-index:1}
+
+/* Sidebar */
+.sidebar{width:220px;flex-shrink:0;position:fixed;height:100vh;display:flex;flex-direction:column;background:rgba(255,255,255,.026);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-right:1px solid var(--gb);z-index:20;padding:0 10px}
+.sb-brand{padding:24px 10px 16px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:8px}
+.sb-brand h1{font-family:'Indie Flower',cursive;font-size:22px;font-weight:400;letter-spacing:.2px;color:rgba(255,255,255,.92);background:none;-webkit-text-fill-color:unset}
+.sb-scroll{flex:1;overflow-y:auto;padding-bottom:20px}
+.sb-scroll::-webkit-scrollbar{display:none}
+.sb-group{font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.09em;text-transform:uppercase;padding:14px 10px 5px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r-md);cursor:pointer;font-size:13px;font-weight:400;color:var(--t2);border:1px solid transparent;background:transparent;width:100%;text-align:left;font-family:inherit;transition:all .15s cubic-bezier(.4,0,.2,1);margin-bottom:2px}
+.nav-item:hover{background:var(--gh);color:var(--t1)}
+.nav-item.active{background:var(--ga);border-color:var(--gab);color:var(--ac2);font-weight:500}
+.ni{width:15px;height:15px;flex-shrink:0;opacity:.65}
+.nav-item.active .ni{opacity:1}
+.nbadge{margin-left:auto;font-size:10px;font-weight:500;background:rgba(255,255,255,.07);color:var(--t3);padding:1px 7px;border-radius:20px;min-width:20px;text-align:center}
+.nav-item.active .nbadge{background:var(--ac);color:white}
+.sb-div{height:1px;background:rgba(255,255,255,.055);margin:8px 4px}
+
+/* Main */
+.main{margin-left:220px;flex:1;padding:2rem 2.5rem 3rem;max-width:1000px}
+
+/* Page header */
+.ph{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:1.75rem}
+.pt{font-family:'Indie Flower',cursive;font-size:36px;font-weight:400;letter-spacing:.3px;color:rgba(255,255,255,.93);background:none;-webkit-text-fill-color:unset;line-height:1.1}
+.ps{font-size:13px;color:var(--t2);margin-top:2px;font-family:-apple-system,'Helvetica Neue',sans-serif}
+
+/* Glass card */
+.gc{background:rgba(255,255,255,.044);backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);border:1px solid rgba(255,255,255,.08);border-radius:var(--r-xl);padding:1.25rem 1.5rem;transition:border-color .2s}
+.gc:hover{border-color:rgba(255,255,255,.12)}
+
+/* Stats */
+.stats-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:1.75rem}
+.sc{background:rgba(255,255,255,.035);backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);border:1px solid rgba(255,255,255,.07);border-radius:var(--r-lg);padding:14px 16px;transition:all .2s}
+.sc:hover{background:rgba(255,255,255,.06)}
+.sl{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.sv{font-size:21px;font-weight:600;letter-spacing:-.5px;line-height:1}
+.ss{font-size:11px;color:var(--t3);margin-top:4px}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r-md);font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;transition:all .15s cubic-bezier(.4,0,.2,1);border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:var(--t1);letter-spacing:-.1px}
+.btn:hover{background:rgba(255,255,255,.10);transform:translateY(-1px)}
+.btn:active{transform:translateY(0) scale(.98)}
+.btn-primary{background:var(--ac);border-color:transparent;color:white;box-shadow:0 0 16px var(--acg)}
+.btn-primary:hover{background:var(--ac2);box-shadow:0 0 22px var(--acg)}
+.btn-sm{padding:5px 11px;font-size:12px;border-radius:var(--r-sm)}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--t2)}
+.btn-ghost:hover{background:rgba(255,255,255,.06);color:var(--t1);border-color:transparent;transform:none}
+.btn-danger{background:transparent;border-color:transparent;color:var(--red)}
+.btn-danger:hover{background:rgba(248,113,113,.09);transform:none}
+
+/* Inputs */
+input,select,textarea{font-family:inherit;font-size:13.5px;color:var(--t1);background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.09);border-radius:var(--r-md);padding:9px 12px;outline:none;transition:all .15s;width:100%}
+input::placeholder,textarea::placeholder{color:var(--t3)}
+input:focus,select:focus,textarea:focus{border-color:var(--ac);background:rgba(249,115,22,.07);box-shadow:0 0 0 3px rgba(249,115,22,.12)}
+select option{background:#1e1610;color:white}
+textarea{resize:vertical;line-height:1.6}
+label{font-size:12px;font-weight:500;color:var(--t2);display:block;margin-bottom:5px}
+.fg{margin-bottom:13px}
+.fr{display:flex;gap:10px}
+.fr .fg{flex:1}
+
+/* List items */
+.li{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.045)}
+.li:last-child{border-bottom:none}
+.li:hover{background:rgba(255,255,255,.016);border-radius:var(--r-sm);padding-left:6px;padding-right:6px;margin:0 -6px}
+.cc{width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(255,255,255,.18);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .17s cubic-bezier(.4,0,.2,1)}
+.cc:hover{border-color:var(--green);transform:scale(1.1)}
+.cc.done{background:var(--green);border-color:var(--green);box-shadow:0 0 10px rgba(52,211,153,.35)}
+.cc.bought{background:var(--ac);border-color:var(--ac);box-shadow:0 0 10px var(--acg)}
+.ci{display:none}
+.cc.done .ci,.cc.bought .ci{display:block}
+.ib{flex:1;min-width:0}
+.in{font-size:14px;line-height:1.4}
+.in.x{text-decoration:line-through;color:var(--t3)}
+.im{margin-top:3px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.ipr{font-size:13px;font-weight:500;color:var(--t2);white-space:nowrap}
+.ia{display:flex;gap:3px;opacity:0;transition:opacity .14s}
+.li:hover .ia{opacity:1}
+
+/* Pills */
+.pill{display:inline-block;font-size:11px;font-weight:500;padding:2px 9px;border-radius:20px;background:rgba(255,255,255,.06);color:var(--t2);border:1px solid rgba(255,255,255,.085)}
+.po{background:var(--acbg);color:var(--ac2);border-color:rgba(249,115,22,.26)}
+.pg{background:rgba(52,211,153,.10);color:var(--green);border-color:rgba(52,211,153,.25)}
+
+/* Filter tabs */
+.ftabs{display:flex;gap:5px;margin-bottom:1.25rem;flex-wrap:wrap}
+.ft{font-size:12.5px;font-weight:500;padding:6px 15px;border-radius:20px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.03);color:var(--t2);cursor:pointer;font-family:inherit;transition:all .15s}
+.ft:hover{border-color:rgba(255,255,255,.13);color:var(--t1)}
+.ft.active{background:rgba(249,115,22,.16);border-color:rgba(249,115,22,.38);color:var(--ac2)}
+
+/* Progress */
+.ptrack{background:rgba(255,255,255,.07);border-radius:4px;height:4px;overflow:hidden}
+.pbar{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--ac),var(--ac2));transition:width .5s cubic-bezier(.4,0,.2,1)}
+.pbar.full{background:linear-gradient(90deg,var(--green),#6ee7b7)}
+
+/* Maps */
+.mw{border-radius:var(--r-xl);overflow:hidden;border:1px solid rgba(255,255,255,.075);background:rgba(255,255,255,.02)}
+.mw svg{display:block;width:100%}
+
+/* Parks grid */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(162px,1fr));gap:8px}
+.ptile{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:var(--r-md);border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.022);cursor:pointer;transition:all .15s;font-size:12.5px;color:var(--t2)}
+.ptile:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);color:var(--t1)}
+.ptile.visited{background:rgba(249,115,22,.09);border-color:rgba(249,115,22,.30);color:var(--ac2)}
+.pdot{width:7px;height:7px;border-radius:50%;border:1.5px solid rgba(255,255,255,.16);flex-shrink:0}
+.ptile.visited .pdot{background:var(--ac);border-color:var(--ac);box-shadow:0 0 6px var(--acg)}
+
+/* Year rows */
+.yr{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.045)}
+.yr:last-child{border-bottom:none}
+.yl{font-size:14px;font-weight:600;width:46px;flex-shrink:0;color:var(--t2)}
+.yn{font-size:20px;font-weight:600;letter-spacing:-.5px}
+.yd{flex:1}
+.ya{opacity:0;transition:opacity .14s;display:flex;gap:3px}
+.yr:hover .ya{opacity:1}
+
+/* Tags */
+.tagrow{line-height:2.2;margin-top:.75rem}
+.ctag{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;background:rgba(249,115,22,.09);color:var(--ac2);border:1px solid rgba(249,115,22,.24);border-radius:20px;font-size:12px;font-weight:500;margin:3px}
+.ctx{cursor:pointer;opacity:.45;transition:opacity .14s;font-size:13px;line-height:1}
+.ctx:hover{opacity:1}
+
+/* Country search */
+.cs-wrap{position:relative}
+.cs-search{border-radius:var(--r-md) var(--r-md) 0 0}
+.cs-list{max-height:220px;overflow-y:auto;border:1px solid rgba(255,255,255,.09);border-top:none;border-radius:0 0 var(--r-md) var(--r-md);background:rgba(24,18,10,.95);backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm)}
+.cs-list::-webkit-scrollbar{width:4px}
+.cs-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.10);border-radius:2px}
+.cs-opt{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;font-size:13px;color:var(--t2);transition:background .11s;border-bottom:1px solid rgba(255,255,255,.035)}
+.cs-opt:last-child{border-bottom:none}
+.cs-opt:hover{background:rgba(249,115,22,.08);color:var(--t1)}
+.cs-opt.sel{background:rgba(249,115,22,.13);color:var(--ac2)}
+.cs-chk{width:16px;height:16px;border-radius:4px;border:1.5px solid rgba(255,255,255,.16);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .13s}
+.cs-opt.sel .cs-chk{background:var(--ac);border-color:var(--ac)}
+.cs-count{font-size:12px;color:var(--t3);margin-top:6px}
+
+/* Financial goals combined */
+.fin-legend{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:1rem}
+.fin-leg-item{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--t2)}
+.fin-leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.fin-goals-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:1.5rem}
+.fin-goal-card{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:var(--r-lg);padding:14px 16px}
+.fin-goal-name{font-size:12px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.fin-goal-val{font-size:22px;font-weight:600;letter-spacing:-.5px;line-height:1}
+.fin-goal-sub{font-size:11px;color:var(--t3);margin-top:5px}
+.fin-goal-prog{margin-top:8px}
+
+/* Ret ring */
+.ret-ring-wrap{display:flex;flex-direction:column;align-items:center}
+
+/* Modal */
+.mbd{display:none;position:fixed;inset:0;background:rgba(0,0,0,.52);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:100;align-items:center;justify-content:center;padding:1rem}
+.mbd.open{display:flex}
+.modal{background:rgba(22,16,9,.92);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid rgba(255,255,255,.10);border-radius:var(--r-xl);padding:2rem;width:480px;max-width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 32px 64px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04);animation:min .21s cubic-bezier(.34,1.56,.64,1)}
+@keyframes min{from{opacity:0;transform:scale(.93) translateY(10px)}to{opacity:1;transform:none}}
+.modal h2{font-family:'Indie Flower',cursive;font-size:28px;font-weight:400;letter-spacing:.2px;margin-bottom:1.25rem;color:rgba(255,255,255,.93)}
+.ma{display:flex;gap:8px;justify-content:flex-end;margin-top:1.5rem}
+
+/* Pages */
+.page{display:none;animation:fi .2s ease}
+.page.active{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+.tc{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.sl2{font-size:10.5px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:11px}
+hr{border:none;border-top:1px solid rgba(255,255,255,.052);margin:.75rem 0}
+.empty{text-align:center;padding:2.5rem 1rem;color:var(--t3)}
+.empty p{font-size:13.5px;margin-bottom:1rem;color:var(--t2)}
+
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.14)}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sb-brand">
+    <h1>Sophie's Tracker</h1>
+    <div id="sync-status" style="font-size:11px;color:var(--t2);margin-top:4px;transition:opacity 1s;opacity:0;letter-spacing:.01em"></div>
+  </div>
+  <div class="sb-scroll">
+    <button class="nav-item active" onclick="goto('dashboard')">
+      <svg class="ni" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.5" opacity=".7"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5" opacity=".7"/></svg>
+      Overview
+    </button>
+
+    <div class="sb-div"></div>
+    <div class="sb-group">Travel</div>
+    <button class="nav-item" onclick="goto('states')">US States<span class="nbadge" id="nb-states">0</span></button>
+    <button class="nav-item" onclick="goto('countries')">Countries<span class="nbadge" id="nb-countries">0</span></button>
+    <button class="nav-item" onclick="goto('parks')">Nat'l Parks<span class="nbadge" id="nb-parks">0</span></button>
+    <button class="nav-item" onclick="goto('bucket')">Bucket List<span class="nbadge" id="nb-bucket">0</span></button>
+
+    <div class="sb-div"></div>
+    <div class="sb-group">Financial Goals</div>
+    <button class="nav-item" onclick="goto('finance')">Financial Goals</button>
+
+    <div class="sb-div"></div>
+    <div class="sb-group">Other</div>
+    <button class="nav-item" onclick="goto('books')">Books<span class="nbadge" id="nb-books">0</span></button>
+    <button class="nav-item" onclick="goto('shopping')">Shopping<span class="nbadge" id="nb-shopping">0</span></button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="ph"><div><div class="pt">Overview</div><div class="ps">Everything at a glance</div></div></div>
+  <div class="stats-bar">
+    <div class="sc"><div class="sl">Books</div><div class="sv" id="ds-books">0</div><div class="ss">all time</div></div>
+    <div class="sc"><div class="sl">Countries</div><div class="sv" id="ds-countries">0</div><div class="ss" id="ds-cpct">0% of world</div></div>
+    <div class="sc"><div class="sl">US States</div><div class="sv" id="ds-states">0</div><div class="ss" id="ds-spct">0% visited</div></div>
+    <div class="sc"><div class="sl">Parks</div><div class="sv" id="ds-parks">0</div><div class="ss" id="ds-ppct">0% visited</div></div>
+    <div class="sc"><div class="sl">Net Worth</div><div class="sv" id="ds-nw" style="font-size:16px;letter-spacing:-.3px">—</div><div class="ss" id="ds-nwsub">latest</div></div>
+  </div>
+  <div class="tc">
+    <div class="gc"><div class="sl2">Recent reading</div><div id="dash-books"></div><button class="btn btn-sm btn-ghost" style="margin-top:10px" onclick="goto('books')">View all →</button></div>
+    <div class="gc"><div class="sl2">Bucket list</div><div id="dash-bucket"></div><button class="btn btn-sm btn-ghost" style="margin-top:10px" onclick="goto('bucket')">View all →</button></div>
+  </div>
+  <div class="tc" style="margin-top:1.25rem">
+    <div class="gc"><div class="sl2">Shopping wishlist</div><div id="dash-shop"></div><button class="btn btn-sm btn-ghost" style="margin-top:10px" onclick="goto('shopping')">View all →</button></div>
+    <div class="gc"><div class="sl2">Net worth trend</div><div style="position:relative;height:140px"><canvas id="dashNwChart"></canvas></div></div>
+  </div>
+</div>
+
+<!-- US STATES -->
+<div class="page" id="page-states">
+  <div class="ph"><div><div class="pt">US States</div><div class="ps" id="states-sub">0 of 50 visited</div></div><button class="btn btn-primary" onclick="openAddState()">+ Add state</button></div>
+  <div class="mw" id="states-map"></div>
+  <div class="tagrow" id="states-tags"></div>
+</div>
+
+<!-- COUNTRIES -->
+<div class="page" id="page-countries">
+  <div class="ph"><div><div class="pt">Countries</div><div class="ps" id="countries-sub">0 of 195 visited</div></div><button class="btn btn-primary" onclick="openAddCountries()">+ Add countries</button></div>
+  <div class="mw" id="world-map"></div>
+  <div class="tagrow" id="countries-tags"></div>
+</div>
+
+<!-- PARKS -->
+<div class="page" id="page-parks">
+  <div class="ph"><div><div class="pt">National Parks</div><div class="ps" id="parks-sub">0 of 63 visited</div></div></div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap">
+    <div class="ftabs" id="parks-ftabs" style="margin-bottom:0">
+      <button class="ft active" onclick="setPF('all',this)">All</button>
+      <button class="ft" onclick="setPF('visited',this)">Visited</button>
+      <button class="ft" onclick="setPF('unvisited',this)">Not yet</button>
+      <button class="ft" id="parks-map-tab" onclick="setParkView('map',this)">Map view</button>
+    </div>
+    <input id="parks-search" placeholder="Search parks..." oninput="renderParks()" style="flex:1;min-width:180px;max-width:280px;padding:7px 12px;font-size:13px">
+  </div>
+  <div id="parks-list-view">
+    <div id="parks-groups"></div>
+  </div>
+  <div id="parks-map-view" style="display:none">
+    <div class="mw" id="parks-map"></div>
+    <div style="margin-top:.75rem;font-size:12px;color:var(--t3)">Click a park marker to toggle visited. Orange = visited, dim = not yet.</div>
+  </div>
+</div>
+
+<!-- BUCKET LIST -->
+<div class="page" id="page-bucket">
+  <div class="ph"><div><div class="pt">Bucket List</div><div class="ps" id="bucket-sub">0 completed</div></div><button class="btn btn-primary" onclick="openAddBucket()">+ Add item</button></div>
+  <div class="ftabs">
+    <button class="ft active" onclick="setBF('all',this)">All</button>
+    <button class="ft" onclick="setBF('todo',this)">To do</button>
+    <button class="ft" onclick="setBF('done',this)">Done</button>
+  </div>
+  <div class="gc" id="bucket-list"></div>
+</div>
+
+<!-- FINANCIAL GOALS (combined) -->
+<div class="page" id="page-finance">
+  <div class="ph">
+    <div><div class="pt">Financial Goals</div><div class="ps">Net worth, investments & retirement in one view</div></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-sm" onclick="openAddFinEntry()">+ Add entry</button>
+      <button class="btn btn-sm btn-primary" onclick="openFinGoals()">Edit goals</button>
+    </div>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="fin-goals-grid" id="fin-cards"></div>
+
+  <!-- Combined chart -->
+  <div class="gc" style="margin-bottom:1.5rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div class="sl2" style="margin:0">Year-over-year comparison</div>
+      <div class="fin-legend" id="fin-legend" style="margin:0"></div>
+    </div>
+    <div style="position:relative;height:280px"><canvas id="finChart"></canvas></div>
+  </div>
+
+  <!-- Retirement progress + goals list -->
+  <div class="tc">
+    <div class="gc">
+      <div class="sl2">Retirement progress</div>
+      <div id="ret-ring-wrap" style="display:flex;flex-direction:column;align-items:center;padding:.5rem 0 1rem"></div>
+      <div style="font-size:13px;color:var(--t2);text-align:center;margin-top:.5rem" id="ret-progress-label"></div>
+    </div>
+    <div class="gc">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <div class="sl2" style="margin:0">Other financial goals</div>
+        <button class="btn btn-sm btn-ghost" onclick="openAddFinGoal()">+ Add goal</button>
+      </div>
+      <div id="fin-goals-list"></div>
+    </div>
+  </div>
+
+  <!-- Year-by-year entries table -->
+  <div class="gc" style="margin-top:1.25rem">
+    <div class="sl2">Entries by year</div>
+    <div id="fin-entries-list"></div>
+  </div>
+</div>
+
+<!-- BOOKS -->
+<div class="page" id="page-books">
+  <div class="ph"><div><div class="pt">Books</div><div class="ps">Track what you read each year</div></div><button class="btn btn-primary" onclick="openAddYear()">+ Add year</button></div>
+  <div style="position:relative;height:250px;margin-bottom:1.5rem"><canvas id="booksChart"></canvas></div>
+  <div class="gc" id="books-list"></div>
+</div>
+
+<!-- SHOPPING -->
+<div class="page" id="page-shopping">
+  <div class="ph"><div><div class="pt">Shopping List</div><div class="ps" id="shop-sub">0 items</div></div><button class="btn btn-primary" onclick="openAddShop()">+ Add item</button></div>
+  <div class="ftabs"><button class="ft active" onclick="setSF('all',this)">All</button><button class="ft" onclick="setSF('want',this)">Want</button><button class="ft" onclick="setSF('bought',this)">Bought</button></div>
+  <div class="ftabs" id="shop-cat-tabs" style="margin-top:-6px"></div>
+  <div class="gc" id="shop-list"></div>
+</div>
+
+</main>
+</div>
+
+<!-- MODAL -->
+<div class="mbd" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal-inner"></div>
+</div>
+
+<script>
+// ─── Data ─────────────────────────────────────────────────────────────────
+const SUPABASE_URL='https://hfcpmjzbsjpiqwbfhxwk.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhmY3Btanpic2pwaXF3YmZoeHdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MDE0MzMsImV4cCI6MjA4OTM3NzQzM30.589RLgw5EqlX37i5WXfyZYxnvpE1kJJpZKBwscAv24g';
+const DEF={books:{},states:[],countries:[],parks:[],
+  finance:{networth:{},investments:{},retirement:{entries:{},goal:0,targetYear:2050},otherGoals:[]},
+  shopping:[],bucket:[]};
+let D=JSON.parse(JSON.stringify(DEF));
+let saveTimeout=null;
+
+function showSyncStatus(msg,color){
+  let el=document.getElementById('sync-status');
+  if(!el)return;
+  el.textContent=msg;
+  el.style.color=color||'var(--t2)';
+  el.style.opacity='1';
+  if(msg!=='Saving...')setTimeout(()=>{el.style.opacity='0';},2500);
+}
+
+async function loadFromSupabase(){
+  try{
+    showSyncStatus('Loading...','var(--t2)');
+    const res=await fetch(SUPABASE_URL+'/rest/v1/tracker_data?id=eq.main&select=data',{
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    });
+    if(!res.ok)throw new Error('Fetch failed '+res.status);
+    const rows=await res.json();
+    if(rows&&rows.length&&rows[0].data&&Object.keys(rows[0].data).length){
+      D=deepMerge(DEF,rows[0].data);
+      showSyncStatus('Synced','var(--green)');
+      return true;
+    }
+    return false;
+  }catch(e){
+    console.warn('Supabase load failed',e);
+    showSyncStatus('Offline — using local data','var(--ac2)');
+    return false;
+  }
+}
+
+async function saveToSupabase(){
+  try{
+    showSyncStatus('Saving...','var(--t2)');
+    const res=await fetch(SUPABASE_URL+'/rest/v1/tracker_data?id=eq.main',{
+      method:'PATCH',
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify({data:D,updated_at:new Date().toISOString()})
+    });
+    if(!res.ok)throw new Error('Save failed '+res.status);
+    localStorage.setItem('sophies_tracker_v1',JSON.stringify(D));
+    showSyncStatus('Saved','var(--green)');
+  }catch(e){
+    console.warn('Supabase save failed, using localStorage',e);
+    localStorage.setItem('sophies_tracker_v1',JSON.stringify(D));
+    showSyncStatus('Saved locally (offline)','var(--ac2)');
+  }
+}
+
+function deepMerge(def,src){
+  const out=JSON.parse(JSON.stringify(def));
+  Object.keys(src).forEach(k=>{
+    if(src[k]!==null&&typeof src[k]==='object'&&!Array.isArray(src[k])&&typeof out[k]==='object'&&!Array.isArray(out[k]))
+      out[k]=deepMerge(out[k],src[k]);
+    else out[k]=src[k];
+  });
+  return out;
+}
+
+function saveData(){
+  // debounce — wait 800ms after last change before writing to Supabase
+  localStorage.setItem('sophies_tracker_v1',JSON.stringify(D));
+  if(saveTimeout)clearTimeout(saveTimeout);
+  saveTimeout=setTimeout(saveToSupabase,800);
+}
+function save(){saveData();refresh();}
+
+async function initData(){
+  // Try loading from Supabase first
+  const loaded=await loadFromSupabase();
+  if(!loaded){
+    // Fall back to localStorage
+    try{
+      const s=localStorage.getItem('sophies_tracker_v1');
+      if(s){const p=JSON.parse(s);D=deepMerge(DEF,p);}
+    }catch(e){}
+    // If Supabase was empty but we have local data, migrate it up
+    if(Object.keys(D.books).length||D.states.length||D.countries.length||D.bucket.length||D.shopping.length){
+      showSyncStatus('Migrating local data to cloud...','var(--ac2)');
+      await saveToSupabase();
+    }
+  }
+  refresh();
+  renderDashboard();
+}
+
+initData();
+
+// ─── Nav ──────────────────────────────────────────────────────────────────
+let cur='dashboard';
+const PAGES=['dashboard','states','countries','parks','bucket','finance','books','shopping'];
+function goto(page){
+  cur=page;
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+page));
+  document.querySelectorAll('.nav-item').forEach((n,i)=>n.classList.toggle('active',PAGES[i]===page));
+  if(page==='states')setTimeout(renderStatesMap,50);
+  if(page==='countries')setTimeout(renderWorldMap,50);
+  if(page==='parks')setTimeout(renderParks,50);
+  if(page==='books')setTimeout(renderBooksChart,50);
+  if(page==='finance')setTimeout(()=>{renderFinChart();renderRetRing();renderFinGoals();renderFinCards();},50);
+  if(page==='dashboard')setTimeout(renderDashboard,50);
+  window.scrollTo(0,0);
+}
+
+// ─── Formatters ───────────────────────────────────────────────────────────
+function fmt$(n){if(n==null||isNaN(n))return'—';const a=Math.abs(n),s=n<0?'-':'';if(a>=1e6)return s+'$'+(Math.round(a/1e4)/100).toFixed(2).replace(/\.?0+$/,'')+'M';if(a>=1e3)return s+'$'+(Math.round(a/100)/10).toFixed(1).replace(/\.0$/,'')+'K';return s+'$'+Math.round(a).toLocaleString();}
+function pct(a,b){return b?Math.round(a/b*100):0;}
+
+// ─── Refresh ──────────────────────────────────────────────────────────────
+function refresh(){
+  updateBadges();renderBooksYearList();renderStatesTags();renderCountriesTags();renderParks();
+  renderParks();renderBucketList();renderShopList();renderFinEntries();
+  if(cur==='books')renderBooksChart();
+  if(cur==='finance'){renderFinChart();renderRetRing();renderFinGoals();renderFinCards();}
+  if(cur==='dashboard')renderDashboard();
+}
+
+function updateBadges(){
+  const tb=Object.values(D.books).reduce((a,b)=>a+(b.read||0),0);
+  document.getElementById('nb-books').textContent=tb;
+  document.getElementById('nb-states').textContent=D.states.length;
+  document.getElementById('nb-countries').textContent=D.countries.length;
+  document.getElementById('nb-parks').textContent=D.parks.length;
+  document.getElementById('nb-bucket').textContent=D.bucket.filter(i=>!i.done).length;
+  document.getElementById('nb-shopping').textContent=D.shopping.filter(i=>!i.bought).length;
+  document.getElementById('ds-books').textContent=tb;
+  document.getElementById('ds-countries').textContent=D.countries.length;
+  document.getElementById('ds-cpct').textContent=pct(D.countries.length,195)+'% of world';
+  document.getElementById('ds-states').textContent=D.states.length;
+  document.getElementById('ds-spct').textContent=pct(D.states.length,50)+'% visited';
+  document.getElementById('ds-parks').textContent=D.parks.length;
+  document.getElementById('ds-ppct').textContent=pct(D.parks.length,63)+'% visited';
+  document.getElementById('states-sub').textContent=D.states.length+' of 50 visited';
+  document.getElementById('countries-sub').textContent=D.countries.length+' of 195 visited';
+  document.getElementById('parks-sub').textContent=D.parks.length+' of 63 visited';
+  document.getElementById('bucket-sub').textContent=D.bucket.filter(i=>i.done).length+' of '+D.bucket.length+' completed';
+  const nwY=Object.keys(D.finance.networth).sort();
+  if(nwY.length){const lat=D.finance.networth[nwY[nwY.length-1]];document.getElementById('ds-nw').textContent=fmt$(lat);if(nwY.length>1){const diff=lat-D.finance.networth[nwY[nwY.length-2]];const el=document.getElementById('ds-nwsub');el.textContent=(diff>=0?'+':'')+fmt$(diff)+' yr';el.style.color=diff>=0?'var(--green)':'var(--red)';}}else document.getElementById('ds-nw').textContent='—';
+}
+
+// ─── BOOKS ────────────────────────────────────────────────────────────────
+let bCI=null;
+function renderBooksChart(){
+  const years=Object.keys(D.books).sort(),reads=years.map(y=>D.books[y].read||0);
+  if(bCI)bCI.destroy();
+  bCI=new Chart(document.getElementById('booksChart'),{
+    type:'bar',
+    data:{labels:years.length?years:['(no data)'],datasets:[{label:'Books',data:reads.length?reads:[0],backgroundColor:'rgba(249,115,22,.62)',hoverBackgroundColor:'rgba(249,115,22,.85)',borderRadius:6,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+' books'},backgroundColor:'rgba(22,16,9,.92)',borderColor:'rgba(255,255,255,.09)',borderWidth:1,displayColors:false}},
+      scales:{x:{ticks:{color:'rgba(255,255,255,.28)',font:{size:12}},grid:{display:false},border:{display:false}},
+              y:{ticks:{color:'rgba(255,255,255,.28)',font:{size:12}},grid:{color:'rgba(255,255,255,.05)'},border:{display:false},beginAtZero:true}}}
+  });
+}
+function renderBooksYearList(){
+  const el=document.getElementById('books-list');
+  const years=Object.keys(D.books).sort().reverse();
+  if(!years.length){el.innerHTML='<div class="empty"><p>No years added yet.</p><button class="btn btn-primary" onclick="openAddYear()">+ Add first year</button></div>';return;}
+  el.innerHTML=years.map(y=>{const{read=0,goal=0}=D.books[y];const p=goal?Math.min(100,Math.round(read/goal*100)):0;
+    return`<div class="yr"><div class="yl">${y}</div><div class="yd"><div style="display:flex;align-items:baseline;gap:10px"><span class="yn">${read}</span><span style="font-size:12px;color:var(--t3)">${goal?'goal: '+goal:'books'}</span></div>${goal?`<div style="margin-top:6px"><div class="ptrack"><div class="pbar${p>=100?' full':''}" style="width:${p}%"></div></div><div style="font-size:11px;color:var(--t3);margin-top:3px">${p}%${p>=100?' — reached!':''}</div></div>`:''}</div><div class="ya"><button class="btn btn-sm btn-ghost" onclick="openEditYear('${y}')">Edit</button><button class="btn btn-sm btn-danger" onclick="delYear('${y}')">×</button></div></div>`;
+  }).join('');
+}
+function openAddYear(){showModal(`<h2>Add year</h2><div class="fg"><label>Year</label><input id="m-year" type="number" placeholder="2024"></div><div class="fg"><label>Books read</label><input id="m-read" type="number" placeholder="24"></div><div class="fg"><label>Reading goal (optional)</label><input id="m-goal" type="number" placeholder="30"></div><div class="ma"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveYear()">Save</button></div>`);}
+function openEditYear(y){const{read=0,goal=0}=D.books[y];showModal(`<h2>Edit ${y}</h2><input type="hidden" id="m-year" value="${y}"><div class="fg"><label>Books read</label><input id="m-read" type="number" value="${read}"></div><div class="fg"><label>Reading goal</label><input id="m-goal" type="number" value="${goal}"></div><div class="ma"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveYear()">Save</button></div>`);}
+function saveYear(){const y=document.getElementById('m-year').value.trim(),r=parseInt(document.getElementById('m-read').value)||0,g=parseInt(document.getElementById('m-goal').value)||0;if(!y)return;D.books[y]={read:r,goal:g};closeModal();save();}
+function delYear(y){if(confirm('Remove '+y+'?')){delete D.books[y];save();}}
+
+// ─── STATES ───────────────────────────────────────────────────────────────
+const ALL_STATES=["Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming"];
+function renderStatesTags(){document.getElementById('states-tags').innerHTML=D.states.map(s=>`<span class="ctag">${s}<span class="ctx" onclick="removeState('${s}')">×</span></span>`).join('');}
+function removeState(s){const i=D.states.findIndex(x=>x.toLowerCase()===s.toLowerCase());if(i>=0){D.states.splice(i,1);save();renderStatesMap();}}
+function renderStatesMap(){
+  const wrap=document.getElementById('states-map');wrap.innerHTML='';
+  let tip=document.getElementById('state-tip');
+  if(!tip){tip=document.createElement('div');tip.id='state-tip';tip.style.cssText='position:fixed;pointer-events:none;display:none;background:rgba(22,16,9,.95);color:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:6px 13px;font-size:13px;font-weight:500;font-family:-apple-system,sans-serif;z-index:9999;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.4)';document.body.appendChild(tip);}
+  const vis=new Set(D.states.map(s=>s.toLowerCase()));
+  const svg=d3.select(wrap).append('svg').attr('viewBox','0 0 800 500').attr('width','100%');
+  const proj=d3.geoAlbersUsa().scale(1000).translate([400,250]);
+  const path=d3.geoPath(proj);
+  d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json').then(us=>{
+    svg.selectAll('path').data(topojson.feature(us,us.objects.states).features).join('path')
+      .attr('d',path).attr('fill',d=>vis.has((d.properties.name||'').toLowerCase())?'rgba(249,115,22,.70)':'rgba(255,255,255,.052)')
+      .attr('stroke','rgba(255,255,255,.09)').attr('stroke-width',.8).style('cursor','pointer')
+      .on('mouseover',function(e,d){
+        d3.select(this).attr('fill',vis.has((d.properties.name||'').toLowerCase())?'rgba(249,115,22,.9)':'rgba(255,255,255,.10)');
+        const v=vis.has((d.properties.name||'').toLowerCase());
+        tip.innerHTML=d.properties.name+(v?' <span style="color:var(--green)">✓</span>':'');
+        tip.style.display='block';
+      })
+      .on('mousemove',function(e){tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-10)+'px';})
+      .on('mouseout',function(e,d){
+        d3.select(this).attr('fill',vis.has((d.properties.name||'').toLowerCase())?'rgba(249,115,22,.70)':'rgba(255,255,255,.052)');
+        tip.style.display='none';
+      })
+      .on('click',function(e,d){toggleState(d.properties.name);});
+  });
+}
+function toggleState(name){const i=D.states.findIndex(s=>s.toLowerCase()===name.toLowerCase());if(i>=0)D.states.splice(i,1);else D.states.push(name);save();renderStatesMap();}
+function openAddState(){const opts=ALL_STATES.filter(s=>!D.states.includes(s)).map(s=>`<option>${s}</option>`).join('');showModal(`<h2>Add state</h2><div class="fg"><label>State</label><select id="m-state"><option value="">Select...</option>${opts}</select></div><p style="font-size:12px;color:var(--t3);margin-top:-7px">Tip: click states on the map too</p><div class="ma"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveState()">Add</button></div>`);}
+function saveState(){const s=document.getElementById('m-state').value;if(s&&!D.states.includes(s))D.states.push(s);closeModal();save();renderStatesMap();}
+
+// ─── COUNTRIES ────────────────────────────────────────────────────────────
+const CN={4:"Afghanistan",8:"Albania",12:"Algeria",24:"Angola",32:"Argentina",36:"Australia",40:"Austria",50:"Bangladesh",56:"Belgium",64:"Bhutan",68:"Bolivia",76:"Brazil",100:"Bulgaria",116:"Cambodia",120:"Cameroon",124:"Canada",152:"Chile",156:"China",170:"Colombia",188:"Costa Rica",192:"Cuba",208:"Denmark",218:"Ecuador",818:"Egypt",231:"Ethiopia",246:"Finland",250:"France",276:"Germany",288:"Ghana",300:"Greece",320:"Guatemala",332:"Haiti",340:"Honduras",356:"India",360:"Indonesia",364:"Iran",368:"Iraq",372:"Ireland",376:"Israel",380:"Italy",388:"Jamaica",392:"Japan",400:"Jordan",404:"Kenya",410:"South Korea",408:"North Korea",414:"Kuwait",418:"Laos",422:"Lebanon",430:"Liberia",434:"Libya",442:"Luxembourg",454:"Malawi",458:"Malaysia",484:"Mexico",504:"Morocco",508:"Mozambique",524:"Nepal",528:"Netherlands",554:"New Zealand",558:"Nicaragua",566:"Nigeria",578:"Norway",586:"Pakistan",600:"Paraguay",604:"Peru",608:"Philippines",616:"Poland",620:"Portugal",642:"Romania",643:"Russia",646:"Rwanda",682:"Saudi Arabia",686:"Senegal",703:"Slovakia",705:"Slovenia",710:"South Africa",724:"Spain",144:"Sri Lanka",752:"Sweden",756:"Switzerland",760:"Syria",764:"Thailand",788:"Tunisia",792:"Turkey",800:"Uganda",804:"Ukraine",784:"United Arab Emirates",826:"United Kingdom",840:"United States of America",858:"Uruguay",860:"Uzbekistan",862:"Venezuela",704:"Vietnam",887:"Yemen",716:"Zimbabwe"};
+// Full UN member name lookup (names not in topology are handled via text-only list)
+const CN_EXTRA=["Andorra","Antigua and Barbuda","Armenia","Azerbaijan","Bahamas","Bahrain","Barbados","Belize","Benin","Bosnia and Herzegovina","Botswana","Brunei","Burkina Faso","Burundi","Cape Verde","Central African Republic","Chad","Comoros","Congo","Cyprus","Djibouti","Dominica","Dominican Republic","East Timor","El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini","Fiji","Gabon","Gambia","Georgia","Grenada","Guinea","Guinea-Bissau","Guyana","Honduras","Hungary","Iceland","Ivory Coast","Kazakhstan","Kiribati","Kosovo","Kyrgyzstan","Latvia","Lebanon","Lesotho","Liechtenstein","Lithuania","Madagascar","Maldives","Mali","Malta","Marshall Islands","Mauritania","Mauritius","Micronesia","Moldova","Monaco","Mongolia","Montenegro","Myanmar","Namibia","Nauru","Niger","North Macedonia","Oman","Palau","Palestine","Panama","Papua New Guinea","Qatar","San Marino","Sao Tome and Principe","Sierra Leone","Singapore","Solomon Islands","Somalia","South Sudan","Sudan","Suriname","Tajikistan","Tanzania","Togo","Tonga","Trinidad and Tobago","Turkmenistan","Tuvalu","Vanuatu","Vatican City","Western Samoa","Yemen","Zambia"];
+const ALL_COUNTRIES=[...new Set([...Object.values(CN),...CN_EXTRA])].sort();
+let cSel=new Set();
+function renderCountriesTags(){document.getElementById('countries-tags').innerHTML=D.countries.map(c=>`<span class="ctag">${c}<span class="ctx" onclick="removeCountry('${c}')">×</span></span>`).join('');}
+function removeCountry(c){const i=D.countries.findIndex(x=>x.toLowerCase()===c.toLowerCase());if(i>=0){D.countries.splice(i,1);save();renderWorldMap();}}
+function renderWorldMap(){
+  const wrap=document.getElementById('world-map');wrap.innerHTML='';
+  const vis=new Set(D.countries.map(c=>c.toLowerCase()));
+  const svg=d3.select(wrap).append('svg').attr('viewBox','0 0 960 500').attr('width','100%');
+  const proj=d3.geoNaturalEarth1().scale(153).translate([480,250]);
+  const path=d3.geoPath(proj);
+  d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(world=>{
+    svg.selectAll('path').data(topojson.feature(world,world.objects.countries).features).join('path')
+      .attr('d',path).attr('fill',d=>vis.has((CN[+d.id]||'').toLowerCase())?'rgba(249,115,22,.70)':'rgba(255,255,255,.052)')
+      .attr('stroke','rgba(255,255,255,.08)').attr('stroke-width',.4).style('cursor','pointer')
+      .on('mouseover',function(e,d){d3.select(this).attr('fill',vis.has((CN[+d.id]||'').toLowerCase())?'rgba(249,115,22,.9)':'rgba(255,255,255,.10)');})
+      .on('mouseout',function(e,d){d3.select(this).attr('fill',vis.has((CN[+d.id]||'').toLowerCase())?'rgba(249,115,22,.70)':'rgba(255,255,255,.052)');})
+      .on('click',function(e,d){const name=CN[+d.id];if(name)toggleCountry(name);})
+      .append('title').text(d=>(CN[+d.id]||'')+(vis.has((CN[+d.id]||'').toLowerCase())?' ✓':''));
+  });
+}
+function toggleCountry(name){const i=D.countries.findIndex(c=>c.toLowerCase()===name.toLowerCase());if(i>=0)D.countries.splice(i,1);else D.countries.push(name);save();renderWorldMap();}
+function openAddCountries(){
+  cSel=new Set();
+  showModal(`<h2>Add countries</h2>
+    <div class="fg"><label>Search & select</label>
+      <div class="cs-wrap">
+        <input class="cs-search" id="cs-in" placeholder="Type to search..." oninput="renderCList(this.value)" autocomplete="off">
+        <div class="cs-list" id="cs-list"></div>
+      </div>
+      <div class="cs-count" id="cs-count">Click countries to select</div>
+    </div>
+    <p style="font-size:12px;color:var(--t3)">Tip: you can also click directly on the map</p>
+    <div class="ma"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveCountries()">Add selected</button></div>`);
+  renderCList('');
+  setTimeout(()=>document.getElementById('cs-in')?.focus(),100);
+}
+function renderCList(q){
+  const ex=new Set(D.countries.map(c=>c.toLowerCase()));
+  const filtered=ALL_COUNTRIES.filter(c=>c.toLowerCase().includes(q.toLowerCase()));
+  const el=document.getElementById('cs-list');if(!el)return;
+  if(!filtered.length){el.innerHTML='<div class="cs-opt" style="cursor:default;color:var(--t3)">No results</div>';return;}
+  el.innerHTML=filtered.map(c=>{const s=cSel.has(c),added=ex.has(c.toLowerCase());
+    return`<div class="cs-opt${s?' sel':''}" onclick="toggleCSel('${c}',${added})"><div class="cs-chk">${s?`<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`:''}</div><span>${c}</span>${added?'<span style="font-size:11px;color:var(--t3);margin-left:auto">added</span>':''}</div>`;
+  }).join('');
+  const cnt=document.getElementById('cs-count');if(cnt)cnt.textContent=cSel.size?cSel.size+' selected':'Click countries to select';
+}
+function toggleCSel(c,added){if(added)return;cSel.has(c)?cSel.delete(c):cSel.add(c);renderCList(document.getElementById('cs-in')?.value||'');}
+function saveCountries(){cSel.forEach(c=>{if(!D.countries.map(x=>x.toLowerCase()).includes(c.toLowerCase()))D.countries.push(c);});cSel=new Set();closeModal();save();renderWorldMap();}
+
+// ─── PARKS ────────────────────────────────────────────────────────────────
+// Parks grouped by state, with coords for map view
+const PARKS_BY_STATE={
+  "Alaska":["Denali","Gates of the Arctic","Glacier Bay","Katmai","Kenai Fjords","Kobuk Valley","Lake Clark","Wrangell-St. Elias"],
+  "Arizona":["Grand Canyon","Petrified Forest","Saguaro"],
+  "Arkansas":["Hot Springs"],
+  "California":["Channel Islands","Death Valley","Joshua Tree","Kings Canyon","Lassen Volcanic","Pinnacles","Redwood","Sequoia","Yosemite"],
+  "Colorado":["Black Canyon of the Gunnison","Great Sand Dunes","Mesa Verde","Rocky Mountain"],
+  "Florida":["Biscayne","Dry Tortugas","Everglades"],
+  "Hawaii":["Haleakala","Hawaii Volcanoes"],
+  "Idaho":["Crater Lake"],
+  "Indiana":["Indiana Dunes"],
+  "Kentucky":["Mammoth Cave"],
+  "Maine":["Acadia"],
+  "Michigan":["Isle Royale"],
+  "Minnesota":["Voyageurs"],
+  "Missouri":["Gateway Arch"],
+  "Montana":["Glacier"],
+  "Nevada":["Great Basin"],
+  "New Mexico":["Carlsbad Caverns","Guadalupe Mountains","White Sands"],
+  "North Dakota":["Theodore Roosevelt"],
+  "Ohio":["Cuyahoga Valley"],
+  "Oregon":["Crater Lake"],
+  "South Carolina":["Congaree"],
+  "South Dakota":["Badlands","Wind Cave"],
+  "Tennessee":["Great Smoky Mountains"],
+  "Texas":["Big Bend","Guadalupe Mountains"],
+  "Utah":["Arches","Bryce Canyon","Canyonlands","Capitol Reef","Zion"],
+  "Virgin Islands":["Virgin Islands"],
+  "Virginia":["Shenandoah"],
+  "Washington":["Mount Rainier","North Cascades","Olympic"],
+  "West Virginia":["New River Gorge"],
+  "Wyoming":["Grand Teton","Yellowstone"]
+};
+// flatten for lookup
+const ALL_PARKS=Object.values(PARKS_BY_STATE).flat();
+// park coords [lat,lon] for map
+const PARK_COORDS={"Acadia":[44.35,-68.21],"Arches":[38.68,-109.57],"Badlands":[43.85,-102.34],"Big Bend":[29.25,-103.25],"Biscayne":[25.48,-80.43],"Black Canyon of the Gunnison":[38.57,-107.72],"Bryce Canyon":[37.57,-112.18],"Canyonlands":[38.2,-109.93],"Capitol Reef":[38.09,-111.17],"Carlsbad Caverns":[32.18,-104.44],"Channel Islands":[34.01,-119.42],"Congaree":[33.8,-80.78],"Crater Lake":[42.94,-122.1],"Cuyahoga Valley":[41.24,-81.55],"Death Valley":[36.24,-116.82],"Denali":[63.33,-150.5],"Dry Tortugas":[24.63,-82.87],"Everglades":[25.39,-80.58],"Gates of the Arctic":[67.78,-153.3],"Gateway Arch":[38.62,-90.19],"Glacier":[48.7,-113.72],"Glacier Bay":[58.65,-136.9],"Grand Canyon":[36.06,-112.14],"Grand Teton":[43.73,-110.8],"Great Basin":[38.98,-114.3],"Great Sand Dunes":[37.73,-105.51],"Great Smoky Mountains":[35.68,-83.53],"Guadalupe Mountains":[31.92,-104.87],"Haleakala":[20.72,-156.17],"Hawaii Volcanoes":[19.43,-155.26],"Hot Springs":[34.51,-93.05],"Indiana Dunes":[41.65,-87.05],"Isle Royale":[48.1,-88.55],"Joshua Tree":[33.88,-115.9],"Katmai":[58.5,-154.97],"Kenai Fjords":[59.92,-149.65],"Kings Canyon":[36.89,-118.55],"Kobuk Valley":[67.55,-159.28],"Lake Clark":[60.97,-153.42],"Lassen Volcanic":[40.49,-121.51],"Mammoth Cave":[37.19,-86.1],"Mesa Verde":[37.24,-108.46],"Mount Rainier":[46.85,-121.75],"New River Gorge":[37.87,-81.08],"North Cascades":[48.7,-121.2],"Olympic":[47.8,-123.6],"Petrified Forest":[35.07,-109.78],"Pinnacles":[36.49,-121.2],"Redwood":[41.3,-124.0],"Rocky Mountain":[40.4,-105.58],"Saguaro":[32.25,-110.5],"Sequoia":[36.43,-118.68],"Shenandoah":[38.49,-78.35],"Theodore Roosevelt":[46.97,-103.45],"Virgin Islands":[18.33,-64.73],"Voyageurs":[48.49,-92.83],"White Sands":[32.78,-106.17],"Wind Cave":[43.57,-103.48],"Wrangell-St. Elias":[61.7,-142.99],"Yellowstone":[44.43,-110.59],"Yosemite":[37.87,-119.54],"Zion":[37.3,-113.05]};
+
+let pf='all', parkView='list';
+function setPF(f,btn){
+  // don't change view mode when clicking filter tabs
+  pf=f;
+  document.querySelectorAll('#parks-ftabs .ft:not(#parks-map-tab)').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderParks();
+}
+function setParkView(view,btn){
+  parkView=view;
+  document.querySelectorAll('#parks-ftabs .ft').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('parks-list-view').style.display=view==='list'?'block':'none';
+  document.getElementById('parks-map-view').style.display=view==='map'?'block':'none';
+  if(view==='map')renderParksMap();
+}
+function renderParks(){
+  if(parkView==='map'){renderParksMap();return;}
+  const vis=new Set(D.parks.map(p=>p.toLowerCase()));
+  const q=(document.getElementById('parks-search')?.value||'').toLowerCase();
+  const el=document.getElementById('parks-groups');
+  const states=Object.keys(PARKS_BY_STATE).sort();
+  let html='';
+  for(const state of states){
+    let parks=PARKS_BY_STATE[state];
+    if(pf==='visited') parks=parks.filter(p=>vis.has(p.toLowerCase()));
+    if(pf==='unvisited') parks=parks.filter(p=>!vis.has(p.toLowerCase()));
+    if(q) parks=parks.filter(p=>p.toLowerCase().includes(q));
+    if(!parks.length) continue;
+    html+=`<div style="margin-bottom:1.25rem">
+      <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid rgba(255,255,255,.05)">${state}</div>
+      <div class="pgrid">${parks.map(p=>{const v=vis.has(p.toLowerCase());return`<div class="ptile${v?' visited':''}" onclick="togglePark('${p}')"><div class="pdot"></div>${p}</div>`;}).join('')}</div>
+    </div>`;
+  }
+  el.innerHTML=html||'<p style="font-size:13px;color:var(--t3);padding:1rem 0">No parks match this filter.</p>';
+}
+function renderParksMap(){
+  const wrap=document.getElementById('parks-map');wrap.innerHTML='';
+  // floating tooltip
+  let tip=document.getElementById('park-map-tip');
+  if(!tip){tip=document.createElement('div');tip.id='park-map-tip';tip.style.cssText='position:fixed;pointer-events:none;display:none;background:rgba(22,16,9,.95);color:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.13);border-radius:9px;padding:7px 14px;font-size:13px;font-weight:500;font-family:-apple-system,sans-serif;z-index:9999;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.45);transition:opacity .1s';document.body.appendChild(tip);}
+  const vis=new Set(D.parks.map(p=>p.toLowerCase()));
+  const w=900,h=560;
+  const svg=d3.select(wrap).append('svg').attr('viewBox',`0 0 ${w} ${h}`).attr('width','100%');
+  const proj=d3.geoAlbersUsa().scale(1100).translate([w/2,h/2]);
+  const path=d3.geoPath(proj);
+  d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json').then(us=>{
+    svg.selectAll('path').data(topojson.feature(us,us.objects.states).features).join('path')
+      .attr('d',path).attr('fill','rgba(255,255,255,.04)').attr('stroke','rgba(255,255,255,.08)').attr('stroke-width',.6);
+    const parks=Object.keys(PARK_COORDS);
+    parks.forEach(name=>{
+      const coords=PARK_COORDS[name];
+      const proj_pt=proj([coords[1],coords[0]]);
+      if(!proj_pt)return;
+      const v=vis.has(name.toLowerCase());
+      const g=svg.append('g').style('cursor','pointer')
+        .on('mouseover',function(e){
+          d3.select(this).select('circle').attr('r',9).attr('fill',v?'rgba(249,115,22,1)':'rgba(255,255,255,.35)');
+          tip.innerHTML=`${name}${v?' <span style="color:#34d399">✓</span>':''}`;
+          tip.style.display='block';
+        })
+        .on('mousemove',function(e){tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-10)+'px';})
+        .on('mouseout',function(){
+          const vNow=new Set(D.parks.map(p=>p.toLowerCase())).has(name.toLowerCase());
+          d3.select(this).select('circle').attr('r',6).attr('fill',vNow?'rgba(249,115,22,.85)':'rgba(255,255,255,.18)');
+          tip.style.display='none';
+        })
+        .on('click',()=>togglePark(name));
+      g.append('circle').attr('cx',proj_pt[0]).attr('cy',proj_pt[1]).attr('r',6)
+        .attr('fill',v?'rgba(249,115,22,.85)':'rgba(255,255,255,.18)')
+        .attr('stroke',v?'rgba(249,115,22,1)':'rgba(255,255,255,.35)').attr('stroke-width',1.5)
+        .style('transition','r .12s,fill .12s');
+    });
+  });
+}
+function togglePark(name){const i=D.parks.findIndex(p=>p.toLowerCase()===name.toLowerCase());if(i>=0)D.parks.splice(i,1);else D.parks.push(name);save();if(parkView==='map')renderParksMap();}
+
+// ─── FINANCIAL GOALS (combined) ───────────────────────────────────────────
+const FIN_SERIES=['networth','investments','retirement'];
+const FIN_COLORS={networth:'rgba(249,115,22,.85)',investments:'rgba(96,165,250,.85)',retirement:'rgba(52,211,153,.85)'};
+const FIN_LABELS={networth:'Net Worth',investments:'Investments',retirement:'Retirement Savings'};
+let finCI=null;
+
+function getAllFinYears(){
+  const yrs=new Set([...Object.keys(D.finance.networth),...Object.keys(D.finance.investments),...Object.keys(D.finance.retirement.entries||{})]);
+  return [...yrs].sort();
+}
+function getFinVal(series,year){
+  if(series==='networth')return D.finance.networth[year]??null;
+  if(series==='investments')return D.finance.investments[year]?.total??null;
+  if(series==='retirement')return D.finance.retirement.entries?.[year]??null;
+  return null;
+}
+
+function renderFinCards(){
+  const nwY=Object.keys(D.finance.networth).sort();
+  const invY=Object.keys(D.finance.investments).sort();
+  const retTotal=Object.values(D.finance.retirement.entries||{}).reduce((a,b)=>a+b,0);
+  const retGoal=D.finance.retirement.goal||0;
+  const latNW=nwY.length?D.finance.networth[nwY[nwY.length-1]]:null;
+  const latInv=invY.length?D.finance.investments[invY[invY.length-1]].total:null;
+  const nwDiff=nwY.length>1?latNW-D.finance.networth[nwY[nwY.length-2]]:null;
+  const invDiff=invY.length>1?latInv-D.finance.investments[invY[invY.length-2]].total:null;
+  const retP=retGoal?Math.min(100,Math.round(retTotal/retGoal*100)):0;
+  document.getElementById('fin-cards').innerHTML=`
+    <div class="fin-goal-card"><div class="fin-goal-name" style="color:rgba(249,115,22,.7)">Net Worth</div><div class="fin-goal-val">${latNW!=null?fmt$(latNW):'—'}</div>${nwDiff!=null?`<div class="fin-goal-sub" style="color:${nwDiff>=0?'var(--green)':'var(--red)'}">${nwDiff>=0?'+':''}${fmt$(nwDiff)} yr</div>`:'<div class="fin-goal-sub">No comparison yet</div>'}</div>
+    <div class="fin-goal-card"><div class="fin-goal-name" style="color:rgba(96,165,250,.8)">Investments</div><div class="fin-goal-val">${latInv!=null?fmt$(latInv):'—'}</div>${invDiff!=null?`<div class="fin-goal-sub" style="color:${invDiff>=0?'var(--green)':'var(--red)'}">${invDiff>=0?'+':''}${fmt$(invDiff)} yr</div>`:'<div class="fin-goal-sub">No comparison yet</div>'}</div>
+    <div class="fin-goal-card"><div class="fin-goal-name" style="color:rgba(52,211,153,.8)">Retirement Savings</div><div class="fin-goal-val">${fmt$(retTotal)}</div><div class="fin-goal-sub">${retGoal?retP+'% of '+fmt$(retGoal)+' goal':'No goal set'}</div>${retGoal?`<div class="fin-goal-prog" style="margin-top:8px"><div class="ptrack"><div class="pbar${retP>=100?' full':''}" style="width:${retP}%"></div></div></div>`:''}</div>`;
+}
+
+function renderFinChart(){
+  const years=getAllFinYears();
+  if(finCI)finCI.destroy();
+  const datasets=FIN_SERIES.map(s=>({
+    label:FIN_LABELS[s],
+    data:years.map(y=>getFinVal(s,y)),
+    borderColor:FIN_COLORS[s],
+    backgroundColor:FIN_COLORS[s].replace('.85',',.10)').replace('rgba(','rgba('),
+    fill:false,tension:.35,pointRadius:4,pointHoverRadius:6,borderWidth:2,
+    spanGaps:true
+  }));
+  finCI=new Chart(document.getElementById('finChart'),{
+    type:'line',data:{labels:years.length?years:[''],datasets},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{usePointStyle:true,boxWidth:8,boxHeight:8,callbacks:{label:c=>` ${c.dataset.label}: ${fmt$(c.raw)}`},backgroundColor:'rgba(22,16,9,.92)',borderColor:'rgba(255,255,255,.09)',borderWidth:1}},
+      scales:{x:{ticks:{color:'rgba(255,255,255,.28)',font:{size:12}},grid:{display:false},border:{display:false}},
+              y:{ticks:{color:'rgba(255,255,255,.28)',font:{size:12},callback:v=>fmt$(v)},grid:{color:'rgba(255,255,255,.05)'},border:{display:false}}}}
+  });
+  // Legend
+  document.getElementById('fin-legend').innerHTML=FIN_SERIES.map(s=>`<span class="fin-leg-item"><span class="fin-leg-dot" style="background:${FIN_COLORS[s]}"></span>${FIN_LABELS[s]}</span>`).join('');
+}
+
+function renderRetRing(){
+  const retTotal=Object.values(D.finance.retirement.entries||{}).reduce((a,b)=>a+b,0);
+  const{goal=0,targetYear=2050}=D.finance.retirement;
+  const p=goal?Math.min(100,Math.round(retTotal/goal*100)):0;
+  const r=64,cx=80,cy=80,circ=2*Math.PI*r;
+  const dash=circ*(p/100);
+  document.getElementById('ret-ring-wrap').innerHTML=`<svg width="160" height="160" viewBox="0 0 160 160" style="transform:rotate(-90deg)">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="11"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="url(#rg2)" stroke-width="11" stroke-linecap="round" stroke-dasharray="${dash} ${circ-dash}">
+      <defs><linearGradient id="rg2" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#6ee7b7"/></linearGradient></defs>
+    </circle>
+    <text x="${cx}" y="${cy-8}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,.90)" font-size="22" font-weight="700" font-family="-apple-system,sans-serif" style="transform:rotate(90deg);transform-origin:${cx}px ${cy}px;-webkit-text-fill-color:unset">${p}%</text>
+    <text x="${cx}" y="${cy+14}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,.35)" font-size="11" font-family="-apple-system,sans-serif" style="transform:rotate(90deg);transform-origin:${cx}px ${cy}px;-webkit-text-fill-color:unset">of goal</text>
+  </svg>`;
+  const lbl=document.getElementById('ret-progress-label');
+  lbl.textContent=goal?(p>=100?'Retirement goal reached! 🎉':fmt$(retTotal)+' saved · '+fmt$(Math.max(0,goal-retTotal))+' remaining'):'Set a retirement goal to track progress';
+  if(targetYear&&goal)lbl.textContent+=(p<100?' · target '+targetYear:'');
+}
+
+function renderFinGoals(){
+  const el=document.getElementById('fin-goals-list');
+  const goals=D.finance.otherGoals||[];
+  if(!goals.length){el.innerHTML='<p style="font-size:13px;color:var(--t3)">No goals yet. Add goals like "Emergency Fund", "House Down Payment", etc.</p>';return;}
+  el.innerHTML=goals.map((g,i)=>{const p=g.target?Math.min(100,Math.round((g.current||0)/g.target*100)):0;
+    return`<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.045)"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:13.5px">${g.name}</span><div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;font-weight:600">${fmt$(g.current||0)}${g.target?' / '+fmt$(g.target):''}</span><button class="btn btn-sm btn-ghost" onclick="openEditFinGoal(${i})">Edit</button><button class="btn btn-sm btn-danger" onclick="delFinGoal(${i})">×</button></div></div>${g.target?`<div class="ptrack"><div class="pbar${p>=100?' full':''}" style="width:${p}%"></div></div><div style="font-size:11px;color:var(--t3);margin-top:3px">${p}%${p>=100?' — reached!':''}</div>`:''}</div>`;
+  }).join('');
+}
+
+function renderFinEntries(){
+  const el=document.getElementById('fin-entries-list');
+  if(!el)return;
+  const years=getAllFinYears().reverse();
+  if(!years.length){el.innerHTML='<p style="font-size:13px;color:var(--t3)">No entries yet. Use "+ Add entry" to get started.</p>';return;}
+  el.innerHTML=`<div style="display:grid;grid-template-columns:60px 1fr 1fr 1fr auto;gap:10px;padding:0 0 8px;border-bottom:1px solid rgba(255,255,255,.07);font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.07em"><span>Year</span><span>Net Worth</span><span>Investments</span><span>Retirement</span><span></span></div>`+
+  years.map(y=>{const nw=D.finance.networth[y],inv=D.finance.investments[y]?.total,ret=D.finance.retirement.entries?.[y];
+    return`<div style="display:grid;grid-template-columns:60px 1fr 1fr 1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="font-size:13px;font-weight:600;color:var(--t2)">${y}</span><span style="font-size:13.5px">${nw!=null?fmt$(nw):'—'}</span><span style="font-size:13.5px">${inv!=null?fmt$(inv):'—'}</span><span style="font-size:13.5px">${ret!=null?fmt$(ret):'—'}</span><button class="btn btn-sm btn-ghost" onclick="openEditFinEntry('${y}')">Edit</button></div>`;
+  }).join('');
+}
+
+function openAddFinEntry(){showModal(`<h2>Add financial entry</h2><div class="fg"><label>Year</label><input id="m-fy" type="number" placeholder="2024"></div><div class="fg"><label>Net Worth ($)</label><input id="m-fnw" type="number" placeholder="100000"></div><div class="fg"><label>Investments ($)</label><input id="m-finv" type="number" placeholder="60000"></div><div class="fg"><label>Retirement savings ($) — annual contribution</label><input id="m-fret" type="number" placeholder="10000"></div><div class="ma"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveFinEntry()">Save</button></div>`);}
+function openEditFinEntry(y){const nw=D.finance.networth[y]||'',inv=D.finance.investments[y]?.total||'',ret=D.finance.retirement.entries?.[y]||'';showModal(`<h2>Edit ${y}</h2><input type="hidden" id="m-fy" value="${y}"><div class="fg"><label>Net Worth ($)</label><input id="m-fnw" type="number" value="${nw}"></div><div class="fg"><label>Investments ($)</label><input id="m-finv" type="number" value="${inv}"></div><div class="fg"><label>Retirement savings ($)</label><input id="m-fret" type="number" value="${ret}"></div><div class="ma"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveFinEntry(true)">Save</button></div>`);}
+function saveFinEntry(edit){
+  const y=document.getElementById('m-fy').value.trim();if(!y)return;
+  const nw=parseFloat(document.getElementById('m-fnw').value),inv=parseFloat(document.getElementById('m-finv').value),ret=parseFloat(document.getElementById('m-fret').value);
+  if(!isNaN(nw)&&nw!==0)D.finance.networth[y]=nw;
+  if(!isNaN(inv)&&inv!==0)D.finance.investments[y]={total:inv};
+  if(!isNaN(ret)&&ret!==0){if(!D.finance.retirement.entries)D.finance.retirement.entries={};D.finance.retirement.entries[y]=ret;}
+  closeModal();save();renderFinChart();renderRetRing();renderFinCards();
+}
+function openFinGoals(){showModal(`<h2>Retirement goal</h2><div class="fg"><label>Total retirement savings goal ($)</label><input id="m-rg" type="number" placeholder="2000000" value="${D.finance.retirement.goal||''}"></div><div class="fg"><label>Target retirement year</label><input id="m-ry" type="number" placeholder="2050" value="${D.finance.retirement.targetYear||''}"></div><div class="ma"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveRetGoal()">Save</button></div>`);}
+function saveRetGoal(){const g=parseFloat(document.getElementById('m-rg').value)||0,y=parseInt(document.getElementById('m-ry').value)||2050;D.finance.retirement.goal=g;D.finance.retirement.targetYear=y;closeModal();save();renderRetRing();renderFinCards();}
+function openAddFinGoal(){showModal(`<h2>Add financial goal</h2><div class="fg"><label>Goal name</label><input id="m-gn" placeholder="Emergency Fund, House Down Payment..."></div><div class="fg"><label>Current amount ($)</label><input id="m-gc" type="number" placeholder="0"></div><div class="fg"><label>Target amount ($, optional)</label><input id="m-gt" type="number" placeholder="50000"></div><div class="ma"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveFinGoal()">Add</button></div>`);}
+function openEditFinGoal(i){const g=D.finance.otherGoals[i];showModal(`<h2>Edit goal</h2><div class="fg"><label>Goal name</label><input id="m-gn" value="${g.name}"></div><div class="fg"><label>Current amount ($)</label><input id="m-gc" type="number" value="${g.current||0}"></div><div class="fg"><label>Target amount ($)</label><input id="m-gt" type="number" value="${g.target||''}"></div><input type="hidden" id="m-gi" value="${i}"><div class="ma"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveFinGoal(true)">Save</button></div>`);}
+function saveFinGoal(edit){const name=document.getElementById('m-gn').value.trim(),current=parseFloat(document.getElementById('m-gc').value)||0,target=parseFloat(document.getElementById('m-gt').value)||0;if(!name)return;if(!D.finance.otherGoals)D.finance.otherGoals=[];if(edit){const i=+document.getElementById('m-gi').value;D.finance.otherGoals[i]={name,current,target};}else D.finance.otherGoals.push({name,current,target});closeModal();save();}
+function delFinGoal(i){D.finance.otherGoals.splice(i,1);save();}
+
+// ─── BUCKET ───────────────────────────────────────────────────────────────
+let bf='all';
+function setBF(f,btn){bf=f;document.querySelectorAll('#page-bucket .ft').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderBucketList();}
+function renderBucketList(){
+  const items=D.bucket.filter(it=>bf==='all'?true:bf==='done'?it.done:!it.done);
+  const el=document.getElementById('bucket-list');
+  if(!items.length){el.innerHTML='<div class="empty"><p>'+(D.bucket.length?'Nothing here.':'Start dreaming big.')+'</p><button class="btn btn-primary" onclick="openAddBucket()">+ Add item</button></div>';return;}
+  el.innerHTML=items.map(it=>{const idx=D.bucket.indexOf(it);return`<div class="li"><div class="cc${it.done?' done':''}" onclick="toggleBucket(${idx})"><svg class="ci" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ib"><div class="in${it.done?' x':''}">${it.text}</div>${it.cat?`<div class="im"><span class="pill po">${it.cat}</span></div>`:''}</div><div class="ia"><button class="btn btn-sm btn-ghost" onclick="openEditBucket(${idx})">Edit</button><button class="btn btn-sm btn-danger" onclick="delBucket(${idx})">×</button></div></div>`;}).join('');
+}
+function openAddBucket(){showModal(`<h2>Add bucket list item</h2><div class="fg"><label>What do you want to do?</label><input id="m-bt" placeholder="See the Northern Lights"></div><div class="fg"><label>Category (optional)</label><input id="m-bc" placeholder="Travel, Adventure, Food..."></div><div class="ma"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveBucket()">Add</button></div>`);}
+function openEditBucket(i){const it=D.bucket[i];showModal(`<h2>Edit item</h2><div class="fg"><label>Item</label><input id="m-bt" value="${it.text}"></div><div class="fg"><label>Category</label><input id="m-bc" value="${it.cat||''}"></div><input type="hidden" id="m-bidx" value="${i}"><div class="ma"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveBucket(true)">Save</button></div>`);}
+function saveBucket(edit){const txt=document.getElementById('m-bt').value.trim(),cat=document.getElementById('m-bc').value.trim();if(!txt)return;if(edit){const i=+document.getElementById('m-bidx').value;D.bucket[i].text=txt;D.bucket[i].cat=cat;}else D.bucket.push({text:txt,cat,done:false});closeModal();save();}
+function toggleBucket(i){D.bucket[i].done=!D.bucket[i].done;save();}
+function delBucket(i){D.bucket.splice(i,1);save();}
+
+// ─── SHOPPING ─────────────────────────────────────────────────────────────
+let sf='all',sc='all';
+const SCATS=['Tech','Home','Clothing','Fitness','Travel','Books','Other'];
+function setSF(f,btn){sf=f;document.querySelectorAll('#page-shopping>.ftabs:first-of-type .ft').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderShopList();}
+function setShopCat(c){sc=c;renderShopList();}
+function renderShopList(){
+  const cats=[...new Set(D.shopping.map(i=>i.cat||'Other'))].sort();
+  const catEl=document.getElementById('shop-cat-tabs');
+  catEl.innerHTML=['<button class="ft'+(sc==='all'?' active':'')+'" onclick="setShopCat(\'all\');this.parentElement.querySelectorAll(\'.ft\').forEach(b=>b.classList.remove(\'active\'));this.classList.add(\'active\')">All</button>',...cats.map(c=>`<button class="ft${sc===c?' active':''}" onclick="setShopCat('${c}');this.parentElement.querySelectorAll('.ft').forEach(b=>b.classList.remove('active'));this.classList.add('active')">${c}</button>`)].join('');
+  let items=D.shopping;
+  if(sf==='bought')items=items.filter(i=>i.bought);
+  else if(sf==='want')items=items.filter(i=>!i.bought);
+  if(sc!=='all')items=items.filter(i=>(i.cat||'Other')===sc);
+  const bought=D.shopping.filter(i=>i.bought).length,total=D.shopping.length;
+  const rem=D.shopping.filter(i=>!i.bought&&i.price).reduce((a,b)=>a+b.price,0);
+  document.getElementById('shop-sub').textContent=bought+' of '+total+' bought'+(rem?' · '+fmt$(rem)+' remaining':'');
+  const el=document.getElementById('shop-list');
+  if(!items.length){el.innerHTML='<div class="empty"><p>'+(D.shopping.length?'Nothing here.':'No items yet.')+'</p><button class="btn btn-primary" onclick="openAddShop()">+ Add item</button></div>';return;}
+  el.innerHTML=items.map(it=>{const idx=D.shopping.indexOf(it);return`<div class="li"><div class="cc${it.bought?' bought':''}" onclick="toggleShop(${idx})"><svg class="ci" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ib"><div class="in${it.bought?' x':''}">${it.name}</div><div class="im">${it.cat?`<span class="pill po">${it.cat}</span>`:''} ${it.notes?`<span style="font-size:12px;color:var(--t3)">${it.notes}</span>`:''}</div></div>${it.price?`<div class="ipr">${fmt$(it.price)}</div>`:''}<div class="ia"><button class="btn btn-sm btn-ghost" onclick="openEditShop(${idx})">Edit</button><button class="btn btn-sm btn-danger" onclick="delShop(${idx})">×</button></div></div>`;}).join('');
+}
+function openAddShop(){const co=SCATS.map(c=>`<option>${c}</option>`).join('');showModal(`<h2>Add item</h2><div class="fg"><label>Item name</label><input id="m-sn" placeholder="iPhone 16 Pro"></div><div class="fr"><div class="fg"><label>Price</label><input id="m-sp" type="number" placeholder="999"></div><div class="fg"><label>Category</label><select id="m-sc"><option value="">Select...</option>${co}</select></div></div><div class="fg"><label>Notes</label><input id="m-sno" placeholder="Wait for sale..."></div><div class="ma"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveShop()">Add</button></div>`);}
+function openEditShop(i){const it=D.shopping[i];const co=SCATS.map(c=>`<option${it.cat===c?' selected':''}>${c}</option>`).join('');showModal(`<h2>Edit item</h2><div class="fg"><label>Item name</label><input id="m-sn" value="${it.name}"></div><div class="fr"><div class="fg"><label>Price</label><input id="m-sp" type="number" value="${it.price||''}"></div><div class="fg"><label>Category</label><select id="m-sc"><option value="">Select...</option>${co}</select></div></div><div class="fg"><label>Notes</label><input id="m-sno" value="${it.notes||''}"></div><input type="hidden" id="m-sidx" value="${i}"><div class="ma"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveShop(true)">Save</button></div>`);}
+function saveShop(edit){const name=document.getElementById('m-sn').value.trim(),price=parseFloat(document.getElementById('m-sp').value)||0,cat=document.getElementById('m-sc').value,notes=document.getElementById('m-sno').value.trim();if(!name)return;if(edit){const i=+document.getElementById('m-sidx').value;Object.assign(D.shopping[i],{name,price,cat,notes});}else D.shopping.push({name,price,cat,notes,bought:false});closeModal();save();}
+function toggleShop(i){D.shopping[i].bought=!D.shopping[i].bought;save();}
+function delShop(i){D.shopping.splice(i,1);save();}
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────
+let dashCI=null;
+function renderDashboard(){
+  const years=Object.keys(D.books).sort().reverse().slice(0,4);
+  const bel=document.getElementById('dash-books');
+  if(!years.length)bel.innerHTML='<p style="font-size:13px;color:var(--t3)">No books tracked yet.</p>';
+  else bel.innerHTML=years.map(y=>{const{read=0,goal=0}=D.books[y];const p=goal?Math.min(100,Math.round(read/goal*100)):0;return`<div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="font-size:13px;font-weight:600;width:40px;color:var(--t2)">${y}</span><span style="font-size:19px;font-weight:600;letter-spacing:-.4px;min-width:28px">${read}</span><div style="flex:1">${goal?`<div class="ptrack"><div class="pbar" style="width:${p}%"></div></div><div style="font-size:11px;color:var(--t3);margin-top:2px">${p}% of ${goal}</div>`:'<div style="font-size:11px;color:var(--t3)">books</div>'}</div></div>`;}).join('');
+  const done=D.bucket.filter(i=>i.done).length,total=D.bucket.length,p=total?Math.round(done/total*100):0;
+  const bpel=document.getElementById('dash-bucket');
+  if(!total)bpel.innerHTML='<p style="font-size:13px;color:var(--t3)">No bucket list items yet.</p>';
+  else{bpel.innerHTML=`<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:9px"><span style="font-size:28px;font-weight:700;letter-spacing:-1px">${done}</span><span style="font-size:13px;color:var(--t2)">of ${total}</span></div><div class="ptrack" style="height:5px;margin-bottom:5px"><div class="pbar${p>=100?' full':''}" style="width:${p}%"></div></div><div style="font-size:11px;color:var(--t3)">${p}% complete</div>`;const undone=D.bucket.filter(i=>!i.done).slice(0,3);if(undone.length)bpel.innerHTML+=`<div style="margin-top:9px">`+undone.map(it=>`<div style="font-size:13px;padding:3px 0;color:var(--t2);display:flex;align-items:center;gap:7px"><span style="width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.16);flex-shrink:0;display:inline-block"></span>${it.text}</div>`).join('')+'</div>';}
+  const sel=document.getElementById('dash-shop');
+  const want=D.shopping.filter(i=>!i.bought).slice(0,4);
+  if(!want.length)sel.innerHTML='<p style="font-size:13px;color:var(--t3)">No shopping items.</p>';
+  else sel.innerHTML=want.map(it=>`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)"><div style="flex:1"><div style="font-size:13px">${it.name}</div>${it.cat?`<div style="font-size:11px;color:var(--t3)">${it.cat}</div>`:''}</div>${it.price?`<span style="font-size:13px;font-weight:500;color:var(--ac2)">${fmt$(it.price)}</span>`:''}</div>`).join('');
+  const nwY=Object.keys(D.finance.networth).sort(),nwV=nwY.map(y=>D.finance.networth[y]);
+  if(dashCI)dashCI.destroy();
+  dashCI=new Chart(document.getElementById('dashNwChart'),{type:'line',data:{labels:nwY.length?nwY:[''],datasets:[{data:nwV.length?nwV:[0],borderColor:'rgba(249,115,22,.82)',backgroundColor:'rgba(249,115,22,.08)',fill:true,tension:.4,pointRadius:3,borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmt$(c.raw)},backgroundColor:'rgba(22,16,9,.92)',borderColor:'rgba(255,255,255,.09)',borderWidth:1,displayColors:false}},
+      scales:{x:{ticks:{color:'rgba(255,255,255,.26)',font:{size:10}},grid:{display:false},border:{display:false}},y:{ticks:{color:'rgba(255,255,255,.26)',font:{size:10},callback:v=>fmt$(v)},grid:{color:'rgba(255,255,255,.05)'},border:{display:false}}}}});
+}
+
+// ─── Modal ─────────────────────────────────────────────────────────────────
+function showModal(html){document.getElementById('modal-inner').innerHTML=html;document.getElementById('modal').classList.add('open');setTimeout(()=>document.querySelector('#modal-inner input:not([type=hidden]):not([type=number]),#modal-inner select')?.focus(),120);}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+// ─── Init ──────────────────────────────────────────────────────────────────
+// initData() called above handles load + render
+</script>
+</body>
+</html>
